@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>勤怠記入システム</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>勤怠記入システム</h1>
+  </header>
+
+  <main class="app-layout">
+    <aside class="sidebar">
+      <div class="sheet-nav">
+        <button id="prevSheet" title="上一份">◀</button>
+        <button id="nextSheet" title="下一份">▶</button>
+      </div>
+      <div class="sheets-list" id="sheetsList" aria-label="已创建的考勤表列表">
+        <!-- 列表由 app.js 渲染 -->
+      </div>
+      <div class="actions">
+        <button id="newBtn" class="btn">新規</button>
+      </div>
+    </aside>
+
+    <section class="main-area">
+      <div class="controls">
+  <label for="dateFilter">年月を選択：</label>
+  <input type="month" id="dateFilter">
+
+        <!-- <input type="text" id="search" placeholder="搜索成员姓名"> -->
+  <button id="exportBtn" style="display:none">エクスポートCSV</button>
+  <!-- データ範囲の入力はモーダルで表示します（エクスポート／インポートをクリックしたときに表示） -->
+
+  <button id="exportDataBtn">エクスポート</button>
+  <input type="file" id="importDataInput" style="display:none" accept="application/json">
+  <button id="importDataBtn">インポート</button>
+  <button id="deleteBtn">削除</button>
+  <button id="deleteAllBtn">全部削除</button>
+  <button id="statBtn">集計</button>
+
+  <!-- 統計用モーダル（ボタン押下で表示） -->
+  <div id="statModal" class="modal" aria-hidden="true" style="display:none;">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-label="集計">
+      <h2>集計期間の選択</h2>
+      <div class="form-row">
+        <label for="statModalDate">集計の締め日：</label>
+        <input type="date" id="statModalDate">
+      </div>
+      <div class="form-actions">
+        <button id="statModalApply" class="btn">確定</button>
+        <button id="statModalCancel" class="btn btn-secondary">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- エクスポート/インポート用の範囲モーダル -->
+  <div id="rangeModal" class="modal" aria-hidden="true" style="display:none;">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-label="データ範囲">
+      <h2>データ範囲の選択 (年-月)</h2>
+      <div class="form-row">
+        <label for="rangeModalFrom">開始：</label>
+        <input type="month" id="rangeModalFrom">
+        <span style="margin:0 6px">〜</span>
+        <label for="rangeModalTo">終了：</label>
+        <input type="month" id="rangeModalTo">
+      </div>
+      <div class="form-actions">
+        <button id="rangeModalApply" class="btn">適用</button>
+        <button id="rangeModalCancel" class="btn btn-secondary">取消</button>
+      </div>
+    </div>
+  </div>
+      </div>
+
+      <div class="table-wrap">
+        <div id="sheetTitle" class="sheet-title">（未选择考勤表）</div>
+        <div id="tableContainer">    
+          <!-- 表格由 app.js 渲染 -->
+        </div>
+      </div>
+      <div id="statTableContainer" style="margin-top:12px;"></div>
+    </section>
+  </main>
+
+  <!-- 新建模态 -->
+  <div id="newModal" class="modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-label="新規">
+      <h2>新規</h2>
+      <div class="form-row">
+        <label>年：</label>
+        <input type="number" id="newYear" min="2000" max="2100">
+        <label>月：</label>
+        <input type="number" id="newMonth" min="1" max="12">
+      </div>
+      <div class="form-row">
+        <label>メンバー数：</label>
+        <input type="number" id="newMembers" min="1" max="100" value="5">
+      </div>
+      <div class="form-actions">
+        <button id="createSheet" class="btn">作成</button>
+        <button id="cancelCreate" class="btn btn-secondary">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <small>年毎にデータを保存するのをお勧めです</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+*{box-sizing:border-box}
+body{font-family:Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans CJK SC", sans-serif;margin:0;background:#f7f9fc;color:#222}
+.site-header{background:#246; color:#fff;padding:18px 16px}
+.site-header h1{margin:0;font-size:1.25rem}
+.app-layout{display:flex;gap:14px;max-width:1200px;margin:18px auto;padding:0 12px}
+.sidebar{width:220px;background:#fff;border-radius:6px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.sheet-nav{display:flex;gap:6px;justify-content:flex-start;margin-bottom:8px}
+.sheet-nav button{padding:6px 8px;border-radius:4px;border:1px solid #ddd;background:#f5f7fa;cursor:pointer}
+.sheets-list{max-height:320px;overflow:auto;border-top:1px solid #f0f2f5;padding-top:8px}
+.sheets-list .sheet-item{padding:8px;border-radius:4px;margin-bottom:6px;cursor:pointer}
+.sheets-list .sheet-item.active{background:#eaf4ff}
+.actions{margin-top:10px}
+.main-area{flex:1}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.controls input[type="date"], .controls input[type="text"]{padding:8px;border:1px solid #ccd; border-radius:4px}
+#exportDataBtn,
+#importDataBtn,
+#deleteBtn,
+#deleteAllBtn,
+#statBtn,
+#toggleRestBtn,
+#newBtn,
+#createSheet,
+#cancelCreate,
+#rangeModalApply,
+#rangeModalCancel,
+#addMemberBtn,
+#statModalApply,
+#statModalCancel,
+#delMemberBtn
+{
+  background:#246;color:#fff;border:0;padding:8px 12px;border-radius:4px;cursor:pointer
+}
+#rangeModalApply,
+#statModalApply,
+#createSheet
+{
+  background:#62bd35
+}
+#deleteBtn,
+#deleteAllBtn,
+#delMemberBtn
+{
+  background:#d33
+}
+#rangeModalCancel,
+#statModalCancel,
+#cancelCreate
+{
+  background:#999
+}
+.table-wrap{overflow:visible;background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.06);padding:12px}
+/* 让表格在列很多时可水平滚动；使用自适宽度并设置最小列宽提高可读性 */
+table{width:max-content; min-width:100%; border-collapse:collapse; table-layout:fixed}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid #eef;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:80px}
+th{background:#e2efff;font-weight:600;position:sticky;top:0;z-index:2}
+table tr:nth-child(even){background-color: #f3f3f3;}
+#tableContainer table tr:nth-child(even){background-color: #fff;}
+.weekday{font-size:0.8rem;color:#666}
+.weekend{background:#fafafa;color:#999}
+.cell-weekend{background:#f9fbfd;color:#9aa}
+/* 半休セル：与普通工作日/休日视觉区分开 */
+.cell-halfrest{background:#ccc;color:#3b2f00}
+/* 今日列のハイライト：滑らかなグラデーションで色がゆっくり変化するアニメーション */
+.col-today{
+  animation: gradientShift 8s ease infinite;
+  background: linear-gradient(90deg,#fff7e6,#e6f7ff,#e6ffe6,#fff7e6);
+  background-size: 300% 300%;
+}
+@keyframes gradientShift{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+.member-name{width:50px;min-width:50px;position:sticky;left:0;background:#fff;z-index:3}
+.member-name input{width:100%;border:1px solid transparent;padding:6px;border-radius:4px}
+.member-name th, .member-name { /* 保证表头姓名格在滚动时覆盖 */
+  z-index:6;
+}
+.member-name input:focus{border-color:#cde}
+.day-inputs{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.day-inputs input{width:44px;padding:6px;border:1px solid #ddd;border-radius:4px;text-align:center}
+.day-inputs select{width:100%;max-width:120px;padding:6px;border:1px solid #ddd;border-radius:4px;background:#fff;font-size:0.95rem}
+.sheet-title{font-weight:600;margin-bottom:8px}
+
+/* 鼠标提示可点击切换列 */
+thead th{cursor:default}
+thead th:hover{background:#eaf2ff}
+
+/* modal */
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);z-index: 99;}
+.modal[aria-hidden="false"]{display:flex}
+.modal-content{background:#fff;padding:16px;border-radius:8px;min-width:320px;box-shadow:0 6px 18px rgba(0,0,0,0.12)}
+.form-row{display:flex;gap:8px;align-items:center;margin:8px 0}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+@media (max-width:900px){
+  .app-layout{flex-direction:column;padding:12px}
+  .sidebar{width:100%}
+  .member-name{width:140px}
+  .day-inputs input{width:34px}
+}
+
+.site-footer{max-width:1200px;margin:14px auto;padding:0 16px;color:#666}
