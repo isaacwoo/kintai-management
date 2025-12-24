@@ -201,7 +201,7 @@ function exportAllData(){
   const blob = new Blob([json], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'kaoqin_data.json';
+  a.href = url; a.download = 'timesheet_data.json';
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 
@@ -254,7 +254,7 @@ function importAllData(file){
     a.href = url;
     const filenameFrom = fromMonthStr ? fromMonthStr.replace('-','') : 'start';
     const filenameTo = toMonthStr ? toMonthStr.replace('-','') : 'end';
-    a.download = `kaoqin_${filenameFrom}-${filenameTo}.json`;
+    a.download = `sheet_${filenameFrom}-${filenameTo}.json`;
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   }
 
@@ -351,7 +351,7 @@ function importAllData(file){
     });
   }
 // 複数の勤務表を管理する（v1）
-const STORAGE_KEY = 'kaoqinSheets_v1';
+const STORAGE_KEY = 'Sheets_v1';
 
 function generateTimeOptions(startMinute, endMinute, stepMin){
   const out = [];
@@ -652,7 +652,7 @@ function deleteAllSheets(){
   renderAll();
 }
 
-function exportCSVCurrent(){ const store = readStore(); if(store.current<0) return alert('勤務表を未選択'); const s = store.sheets[store.current]; const headers = ['名前']; for(let d=1; d<=daysInMonth(s.year,s.month); d++) headers.push(`${d}`); const rows = s.members.map(m=>{ const arr = [m.name]; m.days.forEach(dobj=>{ if(dobj.type==='休') arr.push('休'); else arr.push(dobj.values.map(v=>v||'').join(';')); }); return arr; }); const csv = [headers, ...rows].map(r=>r.map(cell=>`"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n'); const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `kaoqin_${s.year}-${String(s.month).padStart(2,'0')}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
+function exportCSVCurrent(){ const store = readStore(); if(store.current<0) return alert('勤務表を未選択'); const s = store.sheets[store.current]; const headers = ['名前']; for(let d=1; d<=daysInMonth(s.year,s.month); d++) headers.push(`${d}`); const rows = s.members.map(m=>{ const arr = [m.name]; m.days.forEach(dobj=>{ if(dobj.type==='休') arr.push('休'); else arr.push(dobj.values.map(v=>v||'').join(';')); }); return arr; }); const csv = [headers, ...rows].map(r=>r.map(cell=>`"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n'); const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `sheet_${s.year}-${String(s.month).padStart(2,'0')}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
 
 function renderAll(){ renderSheetsList(); renderTableForCurrent(); }
 
