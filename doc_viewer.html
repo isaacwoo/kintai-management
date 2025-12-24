@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ドキュメントビューア - README</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .doc-layout{display:flex;gap:12px;max-width:1200px;margin:18px auto;padding:12px}
+    .toc{width:300px;background:#fff;border-radius:6px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,0.06);max-height:80vh;overflow:auto}
+    .toc.collapsed{display:none}
+    .toc-toggle{display:none;margin-bottom:8px;padding:6px 8px;border-radius:6px;border:1px solid #ddd;background:#f7f7f7;cursor:pointer}
+    .doc-content{flex:1;background:#fff;border-radius:6px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,0.06);max-height:80vh;overflow:auto}
+    .toc h3{margin-top:0}
+    .toc ul{list-style:none;padding-left:6px}
+    .toc a{display:block;padding:6px 4px;color:#246;text-decoration:none;border-radius:4px}
+    .toc a:hover{background:#eef}
+    pre.readme{white-space:pre-wrap;word-break:break-word;font-family:inherit;font-size:0.95rem;line-height:1.6}
+    .line-number{color:#888;display:inline-block;width:46px;text-align:right;margin-right:12px;user-select:none}
+    .toc .lvl-1{padding-left:0;font-weight:600}
+    .toc .lvl-2{padding-left:8px}
+    .toc .lvl-3{padding-left:16px}
+    .goto-top{display:block;margin-top:12px;color:#246}
+    /* Responsive adjustments for small screens */
+    @media (max-width:700px){
+      .doc-layout{flex-direction:column;gap:8px;padding:8px;margin:12px}
+      .toc{width:100%;max-height:28vh;padding:8px}
+      .doc-content{max-height:64vh;padding:8px}
+      .toc-toggle{display:block}
+      .line-number{display:none}
+      pre.readme{font-size:0.95rem}
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header"><h1>ドキュメントビューア</h1></header>
+  <main class="doc-layout">
+    <aside class="toc" id="toc">
+      <button id="tocToggle" class="toc-toggle" aria-expanded="true">目次 ▾</button>
+      <h3>目次</h3>
+      <div id="tocList">読み込み中...</div>
+      <a class="goto-top" href="index.html">← 勤怠システムに戻る</a>
+    </aside>
+    <section class="doc-content">
+      <h2>README.md</h2>
+      <div id="readmeContainer"><em>README 内容を読み込み中…</em></div>
+    </section>
+  </main>
+
+  <script>
+    // README 内容をここに埋め込み（ビルド時にプレーンテキストを挿入）
+  const raw = `
+# 勤怠記入システムについて
+
+
+# 使い方
+1. 新規作成／削除
+左側の「新規」ボタンを押すと勤務表作成用のポップアップが表示され、年月とメンバー数を設定できます。「作成」ボタンを押すと新しい勤務表が追加されます。
+
+追加された勤務表は左側のリストに表示されます。複数ある場合は、クリック／タッチで表示内容を切り替えられます。上部の左右矢印でも前後の表に移動できます。
+
+作成された表の上部には赤色の「削除」「全部削除」ボタンがあります。「削除」は選択中の勤務表のみ削除、「全部削除」はページ内の全勤務表を削除します。削除前には確認ダイアログが表示されますので、安心して操作できます。
+
+2. 編集
+最後の列は「操作」列で、ラジオボタンの「タイプ」と「削除」ボタンがあります。
+主に以下の 3 種類の勤務タイプがあります：
+A：8:00 出社／16:30 退社
+B：9:00 出社／17:30 退社
+C：10:00 出社／18:30 退社  
+タイプを選択すると、そのメンバーの当月の出社／退社時間がすべて A／B／C に自動設定されます。＊①
+
+「削除」をクリックすると、そのメンバーのデータを削除できます。
+
+特定の日の勤怠内容を編集したい場合は、該当セルのプルダウンをクリックして時間を変更できます。「休」を選択すると、その日は休暇扱いになります。逆に休日セルをクリックすると、時間選択のプルダウンに戻ります。
+
+メンバー名をクリックすると、名前を編集できます。
+
+表上部の「メンバー追加」ボタンを押すと、新しいメンバーを下部に追加できます。
+
+3. セーブ／ロード
+編集内容は随時ブラウザの localStorage に保存されるため、ページを閉じたり再読み込みしてもデータは保持されます。
+
+さらに、上部の「エクスポート」ボタンで画面内のデータを JSON ファイルとして出力できます。「インポート」ボタンでは、指定した日付範囲の勤怠データを読み込み、表に反映できます。
+「インポート」「エクスポート」ボタンを押すと、まず日付範囲を選択するポップアップが表示されます。＊②
+
+4. 集計
+上部の「集計」ボタンを押すと、選択した日付までの勤怠データを集計できます。
+集計内容には以下が含まれます：
+
+出勤日数（指定日まで）
+
+指定日までの稼働時間
+
+今月の予想稼働時間
+
+200 時間までの残り業務時間
+
+今日から 200 時間に到達するまでの 1 日あたりの平均業務外時間
+
+休日数
+
+業務外時間 など
+
+5. その他
+・クイックジャンプ
+年月選択欄をクリックすると、指定した年月の勤務表へ素早く移動できます。
+
+・休日／出勤日の切り替え
+勤務表の日付ヘッダーをクリックすると、その日を「休日／出勤日」に切り替えられます。
+
+・画面表示（半休／当日）
+半休（午前休：午後 13:00 開始、午後休：午前 12:00 終了）の場合、該当日の背景色がグレーになります。
+
+当日は視認性向上のため、背景色に軽いアニメーションが入ります。
+
+# 注意点
+①　メンバーに既に入力済みデータがある場合、タイプ変更時に確認ダイアログが表示されます。データが空の場合は自動的に埋められます。
+②　画面上に既存データがあり、インポートしたデータと日付範囲が重複する場合は、重複部分は上書きされ、それ以外は追加されます。
+`;
+
+    function render(){
+      const lines = raw.replace(/\r\n/g,'\n').split('\n');
+      const container = document.getElementById('readmeContainer');
+      const pre = document.createElement('pre'); pre.className='readme';
+      const toc = document.getElementById('tocList'); toc.innerHTML = '';
+      const ul = document.createElement('ul');
+    let lastLevel = 0; const stack = [ul];
+    let lastHeadingLi = null; // for numbered-list subitems
+    let lastHeadingTitle = null; // remember the last heading's title text
+
+    // small helper to escape HTML when injecting into innerHTML
+    function escapeHtml(s){
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+      lines.forEach((ln, idx)=>{
+        const num = idx+1;
+        const span = document.createElement('span'); span.id = 'L'+num;
+        const numSpan = document.createElement('span'); numSpan.className='line-number'; numSpan.textContent = num;
+        const textNode = document.createElement('span'); textNode.textContent = ln || '\u00A0';
+  span.appendChild(numSpan); span.appendChild(textNode);
+  pre.appendChild(span);
+  pre.appendChild(document.createTextNode('\n'));
+
+        // detect markdown headings (# …)
+        const m = ln.match(/^(#{1,6})\s+(.*)$/);
+        if(m){
+          const level = m[1].length;
+          const title = m[2];
+          const li = document.createElement('li');
+          const a = document.createElement('a'); a.href = '#L'+num; a.textContent = title; a.className = 'lvl-'+level;
+          a.addEventListener('click', (e)=>{ e.preventDefault(); document.getElementById('L'+num).scrollIntoView({behavior:'smooth',block:'start'}); });
+          li.appendChild(a);
+          ul.appendChild(li);
+          lastHeadingLi = li; // remember last heading for numbered subitems
+          lastHeadingTitle = title;
+          return;
+        }
+
+        // detect numbered list items (e.g., "1. ...") as sub-TOC under last heading
+        const n = ln.match(/^\s*(\d+)\.\s+(.*)$/);
+        if(n){
+          const idxNum = n[1]; const title = n[2];
+          // If this numbered item is under the '使い方' heading, render it bold in the document body
+          if(lastHeadingTitle === '使い方'){
+            textNode.innerHTML = '<strong>' + escapeHtml(n[0]) + '</strong>';
+          }
+          const subLi = document.createElement('li');
+          const a = document.createElement('a'); a.href = '#L'+num; a.textContent = title; a.className = 'lvl-num';
+          a.addEventListener('click', (e)=>{ e.preventDefault(); document.getElementById('L'+num).scrollIntoView({behavior:'smooth',block:'start'}); });
+          subLi.appendChild(a);
+          if(lastHeadingLi){
+            // ensure lastHeadingLi has a child ul
+            let subUl = lastHeadingLi.querySelector('ul');
+            if(!subUl){ subUl = document.createElement('ul'); subUl.style.listStyle='none'; subUl.style.paddingLeft='12px'; lastHeadingLi.appendChild(subUl); }
+            subUl.appendChild(subLi);
+          } else {
+            ul.appendChild(subLi);
+          }
+          return;
+        }
+      });
+      container.innerHTML = '';
+      container.appendChild(pre);
+      if(ul.children.length === 0) toc.innerHTML = '<p>目次が見つかりませんでした。</p>';
+      else toc.appendChild(ul);
+    }
+    render();
+    // wire up TOC toggle and responsive behaviors
+    (function(){
+      const toc = document.getElementById('toc');
+      const tocToggle = document.getElementById('tocToggle');
+      function isNarrow(){ return window.innerWidth <= 700; }
+      function setTocCollapsed(collapsed){
+        if(collapsed) { toc.classList.add('collapsed'); tocToggle.setAttribute('aria-expanded','false'); tocToggle.textContent = '目次 ▸'; }
+        else { toc.classList.remove('collapsed'); tocToggle.setAttribute('aria-expanded','true'); tocToggle.textContent = '目次 ▾'; }
+      }
+      // default: on narrow screens collapse TOC to prioritize content
+      if(isNarrow()) setTocCollapsed(true);
+  // toggle handler (invert current state)
+  tocToggle.addEventListener('click', ()=>{ setTocCollapsed(!toc.classList.contains('collapsed')); });
+      // when clicking a TOC link on narrow screens, auto-collapse to show content
+      document.getElementById('toc').addEventListener('click', (e)=>{
+        const a = e.target.closest && e.target.closest('a');
+        if(!a) return;
+        if(isNarrow()){ setTocCollapsed(true); }
+      });
+      // on resize, if widening, ensure TOC is visible
+      window.addEventListener('resize', ()=>{ if(!isNarrow()) setTocCollapsed(false); });
+    })();
+  </script>
+</body>
+</html>

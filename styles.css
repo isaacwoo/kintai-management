@@ -99,6 +99,7 @@ thead th:hover{background:#eaf2ff}
   .sidebar{width:100%}
   .member-name{width:140px}
   .day-inputs input{width:34px}
+  /* .modal-content{width: max-content;} */
 }
 
 .site-footer{max-width:1200px;margin:14px auto;padding:0 16px;color:#666}
