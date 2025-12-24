@@ -21,7 +21,7 @@
     .toc .lvl-2{padding-left:8px}
     .toc .lvl-3{padding-left:16px}
     .goto-top{display:block;margin-top:12px;color:#246}
-    /* Responsive adjustments for small screens */
+  /* 小さい画面向けのレスポンシブ調整 */
     @media (max-width:700px){
       /* .toc.collapsed{display:block} */
       .doc-layout{flex-direction:column;gap:8px;padding:8px;margin:12px}
@@ -51,7 +51,7 @@
   </main>
 
   <script>
-    // README 内容をここに埋め込み（ビルド時にプレーンテキストを挿入）
+  // README 内容をここに埋め込み（ビルド時にプレーンテキストを挿入）
   const raw = `
 # 勤怠記入システムについて
 
@@ -131,7 +131,7 @@ C：10:00 出社／18:30 退社
     let lastHeadingLi = null; // for numbered-list subitems
     let lastHeadingTitle = null; // remember the last heading's title text
 
-    // small helper to escape HTML when injecting into innerHTML
+    // innerHTML に挿入する際の HTML エスケープ用の小さなヘルパー
     function escapeHtml(s){
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
@@ -144,7 +144,7 @@ C：10:00 出社／18:30 退社
   pre.appendChild(span);
   pre.appendChild(document.createTextNode('\n'));
 
-        // detect markdown headings (# …)
+  // マークダウンの見出し（# …）を検出
         const m = ln.match(/^(#{1,6})\s+(.*)$/);
         if(m){
           const level = m[1].length;
@@ -159,11 +159,11 @@ C：10:00 出社／18:30 退社
           return;
         }
 
-        // detect numbered list items (e.g., "1. ...") as sub-TOC under last heading
+        // 番号付きリスト項目（例: "1. ..."）を検出し、直近の見出しのサブ目次として扱う
         const n = ln.match(/^\s*(\d+)\.\s+(.*)$/);
         if(n){
           const idxNum = n[1]; const title = n[2];
-          // If this numbered item is under the '使い方' heading, render it bold in the document body
+          // この番号付き項目が「使い方」見出しの下にある場合、本文で太字表示する
           if(lastHeadingTitle === '使い方'){
             textNode.innerHTML = '<strong>' + escapeHtml(n[0]) + '</strong>';
           }
@@ -172,7 +172,7 @@ C：10:00 出社／18:30 退社
           a.addEventListener('click', (e)=>{ e.preventDefault(); document.getElementById('L'+num).scrollIntoView({behavior:'smooth',block:'start'}); });
           subLi.appendChild(a);
           if(lastHeadingLi){
-            // ensure lastHeadingLi has a child ul
+            // lastHeadingLi に子の ul があることを保証する
             let subUl = lastHeadingLi.querySelector('ul');
             if(!subUl){ subUl = document.createElement('ul'); subUl.style.listStyle='none'; subUl.style.paddingLeft='12px'; lastHeadingLi.appendChild(subUl); }
             subUl.appendChild(subLi);
@@ -188,7 +188,7 @@ C：10:00 出社／18:30 退社
       else toc.appendChild(ul);
     }
     render();
-    // wire up TOC toggle and responsive behaviors
+    // 目次のトグルとレスポンシブの動作を設定
     (function(){
       const toc = document.getElementById('toc');
       const tocToggle = document.getElementById('tocToggle');
@@ -197,17 +197,17 @@ C：10:00 出社／18:30 退社
         if(collapsed) { toc.classList.add('collapsed'); tocToggle.setAttribute('aria-expanded','false'); tocToggle.textContent = '目次 ▸'; }
         else { toc.classList.remove('collapsed'); tocToggle.setAttribute('aria-expanded','true'); tocToggle.textContent = '目次 ▾'; }
       }
-      // default: on narrow screens collapse TOC to prioritize content
+      // デフォルト: 狭い画面ではコンテンツ優先で目次を折りたたむ
       if(isNarrow()) setTocCollapsed(true);
-  // toggle handler (invert current state)
-  tocToggle.addEventListener('click', ()=>{ setTocCollapsed(!toc.classList.contains('collapsed')); });
-      // when clicking a TOC link on narrow screens, auto-collapse to show content
+      // トグルハンドラ（現在の状態を反転）
+      tocToggle.addEventListener('click', ()=>{ setTocCollapsed(!toc.classList.contains('collapsed')); });
+      // 狭い画面で目次のリンクをクリックしたら、自動的に目次を折りたたむ
       document.getElementById('toc').addEventListener('click', (e)=>{
         const a = e.target.closest && e.target.closest('a');
         if(!a) return;
         if(isNarrow()){ setTocCollapsed(true); }
       });
-      // on resize, if widening, ensure TOC is visible
+      // リサイズ時に画面が広くなったら目次を表示する
       window.addEventListener('resize', ()=>{ if(!isNarrow()) setTocCollapsed(false); });
     })();
   </script>

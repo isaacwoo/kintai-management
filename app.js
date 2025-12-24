@@ -1,5 +1,5 @@
-// 统计并渲染统计表
-// cutoffDate: optional Date or date-string; if provided, statistics are computed up to that date (inclusive)
+// 統計表を計算してレンダリングする
+// cutoffDate: オプションの Date または日付文字列。指定した場合、その日（含む）までの集計を行う
 function renderStatTable(cutoffDate){
   const store = readStore();
   if(store.current < 0 || !store.sheets[store.current]){
@@ -10,14 +10,14 @@ function renderStatTable(cutoffDate){
   const members = sheet.members;
   const daysCount = daysInMonth(sheet.year, sheet.month);
 
-  // 只统计截止统计日为止的工时与出勤/休息统计
+  // 締め日までの勤務時間および出勤/休の集計のみ行う
   const cutoff = cutoffDate ? (cutoffDate instanceof Date ? cutoffDate : new Date(cutoffDate)) : new Date();
   const statYear = cutoff.getFullYear();
   const statMonth = cutoff.getMonth();
   const statDate = cutoff.getDate();
-  const statDaysCount = Math.min(statDate, daysCount); // 统计到选定日期（含）
+  const statDaysCount = Math.min(statDate, daysCount); // 選択日（含む）までの集計日数
 
-  // 统计表头
+  // 統計表ヘッダ
   let html = '<table class="stat-table" border="1" cellpadding="4" style="border-collapse:collapse;min-width:900px;font-size:13px">';
   html += `<thead><tr><th>名前</th><th>出勤日数(${statDaysCount}日までの出勤日数)</th><th>${statDaysCount}日までの稼働時間</th><th>今月の予想稼働時間</th><th>200時間までの残り業務時間</th><th>200時間になるまで、今日から毎日できる業務外時間平均値</th><th>休日数</th><th>業務外時間</th></tr></thead><tbody>`;
   members.forEach(member=>{
@@ -25,9 +25,9 @@ function renderStatTable(cutoffDate){
     let lastFilledDay = -1;
     let workHoursArr = [];
   
-    // 只统计截止统计日为止的工时与出勤/休息统计
+  // 締め日までの勤務時間および出勤/休の集計のみ行う（同上）
 
-    // 统计本月从1号到今天的出勤/休息/未填
+  // 今月の1日から締め日までの出勤/休/未入力の集計
     restDays = 0;
     workDays = 0;
     halfRestDays = 0;
@@ -65,7 +65,7 @@ function renderStatTable(cutoffDate){
         notFilledDays++;
       }
     }
-    // 计算整月（原始行为）统计，用于：出勤天数、休み天数、今月の予想稼働時間、200小时差额、剩余可分配加班、标准工时分配
+  // 月全体の（元の）統計を計算する: 出勤日数、休日日数、今月の予想稼働時間、200時間との差分、残り配分可能な残業、標準工時配分
     let workDays_full = 0,workDays_days = 0, restDays_full = 0, halfRestDays_full = 0, notFilledDays_full = 0, totalWorkHours_full = 0;
     for(let d=0; d<daysCount; d++){
       const day = member.days[d];
@@ -93,24 +93,24 @@ function renderStatTable(cutoffDate){
         notFilledDays_full++;
       }
     }
-    // a. 出勤天数(整月原始计算)：工作日 - 休息日 + 半天(计0.5)
-    workDays_full = daysCount - restDays_full - halfRestDays_full + halfRestDays_full*0.5;
-    // 出勤天数(含半天)
+  // a. 出勤日数（整月の元計算）：稼働日 - 休日 + 半休（0.5として計上）
+  workDays_full = daysCount - restDays_full - halfRestDays_full + halfRestDays_full*0.5;
+  // 出勤日数（半休含む）
     workDays_days = daysCount - restDays_full
-    // b. 休息天数(整月)
+  // b. 休日数（整月）
     let statRestDays_full = restDays_full + halfRestDays_full*0.5;
-    // c. 预计总工时(整月原始逻辑) = 已录入(整月) + 未录入(整月)*7.5
+  // c. 予想総労働時間（整月の元ロジック）= 入力済み(整月) + 未入力日数(整月) * 7.5
     let estWorkHours_full = totalWorkHours_full + notFilledDays_full*7.5;
-    // d. 截止统计日累计工时（保留为截止今日的已录入工时）
+  // d. 締め日時点の累計労働時間（締め日までに入力された時間）
     let statWorkHours = totalWorkHours;
-    // b. 休息天数=休息日+半天休假
+    // b. 休日数 = 休日 + 半休
     // let statRestDays = restDays + halfRestDays*0.5;
-  // c. 预计总工时=已录入工时+未录入天数*7.5
+  // c. 予想総労働時間 = 入力済み労働時間 + 未入力日数 * 7.5
   // let estWorkHours = totalWorkHours + notFilledDays*7.5;
-    // e. 截止统计日累计加班
+    // e. 締め日時点の累計残業
     let statOT = 0;
     let statOTLaw = 0;
-    // 只统计截止统计日的加班
+  // 締め日までの残業のみを集計する
     statOT = 0;
     statOTLaw = 0;
     for(let d=0; d<daysCount; d++){
@@ -147,22 +147,22 @@ function renderStatTable(cutoffDate){
         statOTLaw += otLaw;
       }
     }
-  // f. 200小时差额（按整月预测计算）
+  // f. 200時間との差額（整月予測に基づく）
   let diff200 = 200 - estWorkHours_full;
-  // g. 剩余可分配加班 = diff200 / 未录入天数(整月)
-  // remainDays 、workDays_days - workDays- （半休合計 - まだの半休）
+  // g. 残り割り当て可能な残業 = diff200 / 未入力日数(整月)
+  // remainDays = workDays_days - workDays - (半休合計 - すでにある半休)
   let remainDays = workDays_days - workDays - (halfRestDays_full - halfRestDays);
   // let remainDays = notFilledDays_full;
   let remainOT = remainDays > 0 ? diff200/remainDays : 0;
-  // h. 标准工时分配（按整月原始逻辑）：(200 - 已录入(截止今日) - 半天休假工时)/ (出勤天数(整月) - 半天休假天数(整月))
-  // 这里保留已录入工时使用截止今日的 statWorkHours，以保持原先分配逻辑的语义
+  // h. 標準労働時間の配分（整月の元ロジック）: (200 - 入力済み(締め日まで) - 半休の工時) / (出勤日数(整月) - 半休日数(整月))
+  // ここでは配分ロジックの意味を保つため、入力済み工時に締め日時点の statWorkHours を使用する
   // let stdWork = (workDays_full - halfRestDays_full) > 0 ? (200 - statWorkHours - halfRestDays_full*0.5)/(workDays_full - halfRestDays_full) : 0;
   html += `<tr><td>${member.name}</td><td>${workDays_days}日(${workDays}日)</td><td>${statWorkHours.toFixed(2)}</td><td>${estWorkHours_full.toFixed(2)}</td><td>${diff200.toFixed(2)}</td><td>${remainOT.toFixed(2)}</td><td>${statRestDays_full.toFixed(2)}</td><td>${statOT.toFixed(2)}(${statOTLaw.toFixed(2)})</td></tr>`;
   });
   html += '</tbody></table>';
   document.getElementById('statTableContainer').innerHTML = html;
 }
-  // 统计按钮事件（弹出日期选择器，默认选中今天或该表的最后一天）
+  // 統計ボタンのイベント（日時選択モーダルを表示。デフォルトは今日または当表の最終日）
   const statBtn = document.getElementById('statBtn');
   const statModal = document.getElementById('statModal');
   const statModalDate = document.getElementById('statModalDate');
@@ -194,7 +194,7 @@ function renderStatTable(cutoffDate){
     });
     statModalCancel.addEventListener('click', ()=>{ closeStatModal(); });
   }
-// 导出完整 JSON 数据
+// 完全な JSON データをエクスポートする
 function exportAllData(){
   const store = readStore();
   const json = JSON.stringify(store, null, 2);
@@ -205,7 +205,7 @@ function exportAllData(){
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 
-// 导入完整 JSON 数据
+// 完全な JSON データをインポートする
 function importAllData(file){
   const reader = new FileReader();
   reader.onload = function(e){
@@ -224,9 +224,9 @@ function importAllData(file){
   };
   reader.readAsText(file);
 }
-  // 导出/导入数据按钮事件（支持可选的年-月范围）
+  // エクスポート/インポート用ボタンのイベント（オプションで年-月範囲をサポート）
   function _parseMonthKey(v){
-    if(!v) return null; // expect 'YYYY-MM'
+  if(!v) return null; // 期待される形式: 'YYYY-MM'
     const parts = v.split('-'); if(parts.length<2) return null;
     const y = parseInt(parts[0],10); const m = parseInt(parts[1],10);
     if(isNaN(y) || isNaN(m)) return null; return y*12 + (m-1);
@@ -296,17 +296,17 @@ function importAllData(file){
   const exportDataBtn = document.getElementById('exportDataBtn');
   const importDataBtn = document.getElementById('importDataBtn');
   const importDataInput = document.getElementById('importDataInput');
-  // Range modal elements (for export/import). The modal is opened on button click, then Apply triggers action.
+  // 範囲モーダルの要素（エクスポート/インポート用）。ボタン押下でモーダルを開き、適用で処理を実行する
   const rangeModal = document.getElementById('rangeModal');
   const rangeModalFrom = document.getElementById('rangeModalFrom');
   const rangeModalTo = document.getElementById('rangeModalTo');
   const rangeModalApply = document.getElementById('rangeModalApply');
   const rangeModalCancel = document.getElementById('rangeModalCancel');
   let _pendingRangeAction = null; // 'export' or 'import'
-  let _pendingImportRange = null; // store selected range for import when file chosen
+  let _pendingImportRange = null; // ファイル選択時にインポートする範囲を一時保存する
 
   function openRangeModal(action){
-    // action: 'export' | 'import'
+  // action: 'export' | 'import'（エクスポートまたはインポート）
     const st = readStore();
     if(st.current<0 && action === 'export') return alert('勤務表を未選択');
     const today = new Date();
@@ -326,9 +326,9 @@ function importAllData(file){
         if(fromVal || toVal) exportDataByMonthRange(fromVal, toVal);
         else exportAllData();
       }else if(_pendingRangeAction === 'import'){
-        // store selected range and trigger file picker
+  // 選択した範囲を保存してファイル選択ダイアログを開く
         _pendingImportRange = { from: fromVal, to: toVal };
-        // open file selector
+  // ファイル選択ダイアログを開く
         if(importDataInput){ importDataInput.value = ''; importDataInput.click(); }
       }
       closeRangeModal();
@@ -343,14 +343,14 @@ function importAllData(file){
         const file = e.target.files[0];
         const fromVal = _pendingImportRange ? _pendingImportRange.from : '';
         const toVal = _pendingImportRange ? _pendingImportRange.to : '';
-        // reset pending range after use
+  // 使用後に保留範囲をリセットする
         _pendingImportRange = null;
         if(fromVal || toVal) importDataByMonthRange(file, fromVal, toVal);
         else importAllData(file);
       }
     });
   }
-// 多份考勤表管理 v1
+// 複数の勤務表を管理する（v1）
 const STORAGE_KEY = 'kaoqinSheets_v1';
 
 function generateTimeOptions(startMinute, endMinute, stepMin){
@@ -449,9 +449,9 @@ function renderTableForCurrent(){
   if(store.current < 0 || !store.sheets[store.current]){ document.getElementById('sheetTitle').textContent = '（勤務表を未選択）'; return; }
   const sheet = store.sheets[store.current];
   const sheetTitleEl = document.getElementById('sheetTitle');
-  // sheetTitleEl.textContent = `${sheet.year}年 ${sheet.month}月 — ${sheet.components} 项/日`;
+  // sheetTitleEl.textContent = `${sheet.year}年 ${sheet.month}月 — ${sheet.components} 項目/日`;
   sheetTitleEl.textContent = `${sheet.year}年 ${sheet.month}月`;
-  // toggle button
+  // トグルボタン
   if(!document.getElementById('toggleRestBtn')){
     const btn = document.createElement('button'); btn.id = 'toggleRestBtn'; btn.style.marginBottom = '10px';
     btn.addEventListener('click', ()=>{ const st = readStore(); st.showAllDays = !st.showAllDays; writeStore(st); renderAll(); });
@@ -459,7 +459,7 @@ function renderTableForCurrent(){
   }
   document.getElementById('toggleRestBtn').textContent = store.showAllDays ? '休日を隠す' : '休日を表示';
 
-  // add member button (if not exists)
+  // メンバー追加ボタン（未作成なら作成）
   if(!document.getElementById('addMemberBtn')){
     const addBtn = document.createElement('button'); addBtn.id = 'addMemberBtn'; addBtn.style.marginLeft = '8px';
     addBtn.textContent = 'メンバー追加';
@@ -483,7 +483,7 @@ function renderTableForCurrent(){
 
   const daysCount = daysInMonth(sheet.year, sheet.month);
   const visibleDays = [];
-  // current date for highlighting today column
+  // 今日の列をハイライトするための現在日付
   const now = new Date(); const nowY = now.getFullYear(); const nowM = now.getMonth()+1; const nowD = now.getDate();
   for(let d=1; d<=daysCount; d++){
     const idx = d-1;
@@ -499,11 +499,11 @@ function renderTableForCurrent(){
   visibleDays.forEach((d, visIndex)=>{
     const th = document.createElement('th'); const wk = weekdayOf(sheet.year, sheet.month, d);
   const dayLabel = store.showAllDays ? `${d}` : `${visIndex+1}`;
-  // 显示：序号 / 周几 / 具体月日（例如 11.20），便于识别
+  // 表示：序号 / 曜日 / 月日
   const monthDay = `${String(sheet.month).padStart(2,'0')}.${String(d).padStart(2,'0')}`;
   th.innerHTML = `<div>${dayLabel}</div><div class="weekday" style="color:#0538ff">${wnames[wk]}</div><div class="month-day" style="font-size:0.8em;font-weight:bold;color:#f00">${monthDay}</div>`;
   if(wk===0||wk===6) th.className = 'weekend';
-  // highlight today's column when this sheet matches current date
+  // このシートが今日の年月と一致する場合に当日の列をハイライト
   if(sheet.year === nowY && sheet.month === nowM && d === nowD){ th.classList.add('col-today'); }
     th.style.cursor = 'pointer';
     th.addEventListener('click', ()=>{
@@ -537,20 +537,20 @@ function renderTableForCurrent(){
   nameInput.style.textOverflow = 'ellipsis';
   nameInput.style.verticalAlign = 'middle';
     nameInput.addEventListener('change', (e)=>{ const store2 = readStore(); store2.sheets[store2.current].members[mi].name = e.target.value; writeStore(store2); renderSheetsList(); });
-      // 姓名和A/B/C下拉并排显示，且都可见
+      // 姓名とA/B/Cのドロップダウンを並べて表示し、両方とも可視化
       const nameWrap = document.createElement('span');
       nameWrap.style.display = 'inline-block';
       nameWrap.style.verticalAlign = 'middle';
       nameWrap.appendChild(nameInput);
 
-      // nameWrap currently contains only the name input; 操作列へは後でタイプ選択と削除ボタンを配置します
+  // nameWrap は現在名前入力のみを含む。操作列には後でタイプ選択と削除ボタンを配置します
       nameTd.appendChild(nameWrap);
     tr.appendChild(nameTd);
 
     visibleDays.forEach(d=>{
       const di = d-1; const dayObj = member.days[di]; const td = document.createElement('td');
       const isTodayCol = (sheet.year === nowY && sheet.month === nowM && d === nowD);
-      // determine if this day is a half-rest (午前/午後半休) based on time markers
+  // 時間マーカーに基づいて、この日が半休（午前/午後半休）か判定
       const checkinVal = dayObj.values && dayObj.values[0];
       const checkoutVal = dayObj.values && dayObj.values[1];
       const isHalf = (checkinVal === '13:00') || (checkoutVal === '12:00');
@@ -580,9 +580,9 @@ function renderTableForCurrent(){
       }
       tr.appendChild(td);
     });
-    // 操作列（最后一列）: 包含 タイプ 下拉 和 削除 按钮
+    // 操作列（最後の列）: 包含 タイプ ドロップダウン と 削除 ボタン
     const opsTd = document.createElement('td'); opsTd.className = 'cell-ops';
-    // preset select (タイプ)
+  // プリセット選択（タイプ）
     const presetSel2 = document.createElement('select');
     const ph2 = document.createElement('option'); ph2.value=''; ph2.textContent='タイプ'; presetSel2.appendChild(ph2);
     ['A','B','C'].forEach(k=>{ const o = document.createElement('option'); o.value = k; o.textContent = k; presetSel2.appendChild(o); });
@@ -593,7 +593,7 @@ function renderTableForCurrent(){
       const v = e.target.value; if(!v) return;
       const st = readStore(); if(st.current < 0) return;
       const s = st.sheets[st.current];
-      // detect if this member already has any filled data
+  // このメンバーに既に入力済みデータがあるかを検出
       const memberDays = s.members[mi].days || [];
       let hasFilled = false;
       for(let di=0; di<memberDays.length; di++){
@@ -605,7 +605,7 @@ function renderTableForCurrent(){
         }
         if(hasFilled) break;
       }
-      // if has data, ask confirmation first
+  // データがある場合は事前に確認を行う
       if(hasFilled){
         const ok = confirm('このメンバーには既に入力があります。タイプを変更すると既存の時刻が上書きされます。続行しますか？');
         if(!ok){ e.target.value = ''; return; }
@@ -647,7 +647,7 @@ function deleteAllSheets(){
   if(!store.sheets || store.sheets.length === 0) return alert('削除する勤務表がありません');
   const ok = confirm('すべての勤務表を削除しますか？元に戻せません。');
   if(!ok) return;
-  // clear storage
+  // ストレージをクリア
   writeStore({ sheets: [], current: -1, showAllDays: true });
   renderAll();
 }
@@ -666,11 +666,11 @@ function init(){
   const delBtn = document.getElementById('deleteBtn'); if(delBtn) delBtn.addEventListener('click', deleteCurrentSheet);
   const delAllBtn = document.getElementById('deleteAllBtn'); if(delAllBtn) delAllBtn.addEventListener('click', deleteAllSheets);
   const dateInput = document.getElementById('dateFilter'); const today = new Date();
-  // initialize as YYYY-MM for month picker
+  // 月選択を YYYY-MM に初期化
   dateInput.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
-  // keep previous value so we can revert if user selects a month that has no sheet
+  // シートが存在しない月を選択した場合に戻せるよう、前の値を保持
   let _prevDateFilterVal = dateInput.value;
-  // when user selects a month, navigate to that sheet if exists; otherwise warn and revert
+  // ユーザーが月を選択したら該当する勤務表に移動。無ければ警告して元に戻す
   dateInput.addEventListener('change', ()=>{
     const v = dateInput.value; if(!v) return;
     const parts = v.split('-'); const yy = parts[0]; const mm = parts[1];
@@ -679,7 +679,7 @@ function init(){
     if(idx>=0){ store.current = idx; writeStore(store); renderAll(); _prevDateFilterVal = v; }
     else{
       alert('該当する勤務表が見つかりません: ' + v);
-      // revert the input to previous value
+  // 入力を前の値に戻す
       dateInput.value = _prevDateFilterVal;
     }
   });

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="ja">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,11 +14,11 @@
   <main class="app-layout">
     <aside class="sidebar">
       <div class="sheet-nav">
-        <button id="prevSheet" title="上一份">◀</button>
-        <button id="nextSheet" title="下一份">▶</button>
+  <button id="prevSheet" title="前の勤務表">◀</button>
+  <button id="nextSheet" title="次の勤務表">▶</button>
       </div>
-      <div class="sheets-list" id="sheetsList" aria-label="已创建的考勤表列表">
-        <!-- 列表由 app.js 渲染 -->
+      <div class="sheets-list" id="sheetsList" aria-label="作成済みの勤務表リスト">
+        <!-- リストは app.js によってレンダリングされます -->
       </div>
       <div class="actions">
         <button id="newBtn" class="btn">新規</button>
@@ -30,7 +30,7 @@
   <label for="dateFilter">年月を選択：</label>
   <input type="month" id="dateFilter">
 
-        <!-- <input type="text" id="search" placeholder="搜索成员姓名"> -->
+  <!-- <input type="text" id="search" placeholder="メンバー名で検索"> -->
   <button id="exportBtn" style="display:none">エクスポートCSV</button>
   <!-- データ範囲の入力はモーダルで表示します（エクスポート／インポートをクリックしたときに表示） -->
 
@@ -38,7 +38,7 @@
   <input type="file" id="importDataInput" style="display:none" accept="application/json">
   <button id="importDataBtn">インポート</button>
   <button id="deleteBtn">削除</button>
-  <button id="deleteAllBtn">全部削除</button>
+  <button id="deleteAllBtn">全て削除</button>
   <button id="statBtn">集計</button>
 
   <!-- 統計用モーダル（ボタン押下で表示） -->
@@ -51,7 +51,7 @@
       </div>
       <div class="form-actions">
         <button id="statModalApply" class="btn">確定</button>
-        <button id="statModalCancel" class="btn btn-secondary">取消</button>
+  <button id="statModalCancel" class="btn btn-secondary">キャンセル</button>
       </div>
     </div>
   </div>
@@ -69,23 +69,23 @@
       </div>
       <div class="form-actions">
         <button id="rangeModalApply" class="btn">適用</button>
-        <button id="rangeModalCancel" class="btn btn-secondary">取消</button>
+  <button id="rangeModalCancel" class="btn btn-secondary">キャンセル</button>
       </div>
     </div>
   </div>
       </div>
 
       <div class="table-wrap">
-        <div id="sheetTitle" class="sheet-title">（未选择考勤表）</div>
+        <div id="sheetTitle" class="sheet-title">（勤務表未選択）</div>
         <div id="tableContainer">    
-          <!-- 表格由 app.js 渲染 -->
+          <!-- テーブルは app.js によってレンダリングされます -->
         </div>
       </div>
       <div id="statTableContainer" style="margin-top:12px;"></div>
     </section>
   </main>
 
-  <!-- 新建模态 -->
+  <!-- 新規モーダル -->
   <div id="newModal" class="modal" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-modal="true" aria-label="新規">
       <h2>新規</h2>
@@ -100,8 +100,8 @@
         <input type="number" id="newMembers" min="1" max="100" value="5">
       </div>
       <div class="form-actions">
-        <button id="createSheet" class="btn">作成</button>
-        <button id="cancelCreate" class="btn btn-secondary">取消</button>
+  <button id="createSheet" class="btn">作成</button>
+  <button id="cancelCreate" class="btn btn-secondary">キャンセル</button>
       </div>
     </div>
   </div>
