@@ -23,6 +23,7 @@
     .goto-top{display:block;margin-top:12px;color:#246}
     /* Responsive adjustments for small screens */
     @media (max-width:700px){
+      /* .toc.collapsed{display:block} */
       .doc-layout{flex-direction:column;gap:8px;padding:8px;margin:12px}
       .toc{width:100%;max-height:28vh;padding:8px}
       .doc-content{max-height:64vh;padding:8px}
@@ -35,8 +36,9 @@
 <body>
   <header class="site-header"><h1>ドキュメントビューア</h1></header>
   <main class="doc-layout">
+    <button id="tocToggle" class="toc-toggle" aria-expanded="true">目次 ▾</button>
     <aside class="toc" id="toc">
-      <button id="tocToggle" class="toc-toggle" aria-expanded="true">目次 ▾</button>
+      
       <h3>目次</h3>
       <div id="tocList">読み込み中...</div>
       <a class="goto-top" href="index.html">← 勤怠システムに戻る</a>
