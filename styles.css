@@ -72,6 +72,33 @@ table tr:nth-child(even){background-color: #f3f3f3;}
   50%{background-position:100% 50%}
   100%{background-position:0% 50%}
 }
+
+/* 今日列の左右に流れる細いラインを追加して、境界が流れるように見せる */
+.col-today{
+  position:relative; /* 擬似要素を配置するため */
+}
+.col-today::before,
+.col-today::after{
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  pointer-events: none;
+  z-index: 5;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #f38ab1, #e411b6, #00c6ff, #7bff00);
+  background-size: 200% 200%;
+  animation: gradientShiftBorder 3.5s linear infinite;
+  opacity: 0.95;
+}
+.col-today::before{ left: 2px; }
+.col-today::after{ right: 2px; }
+@keyframes gradientShiftBorder{
+  0%{ background-position:0% 0% }
+  50%{ background-position:100% 100% }
+  100%{ background-position:0% 0% }
+}
 .member-name{width:50px;min-width:50px;position:sticky;left:0;background:#fff;z-index:3}
 .member-name input{width:100%;border:1px solid transparent;padding:6px;border-radius:4px}
 .member-name th, .member-name { /* ヘッダーの名前セルがスクロール時に重なって表示されるようにする */
