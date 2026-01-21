@@ -18,147 +18,152 @@ function renderStatTable(cutoffDate){
   const statDaysCount = Math.min(statDate, daysCount); // 選択日（含む）までの集計日数
 
   // 統計表ヘッダ
-  let html = '<table class="stat-table" border="1" cellpadding="4" style="border-collapse:collapse;min-width:900px;font-size:13px">';
-  html += `<thead><tr><th>名前</th><th>出勤日数(${statDaysCount}日までの出勤日数)</th><th>${statDaysCount}日までの稼働時間</th><th>今月の予想稼働時間</th><th>200時間までの残り業務時間</th><th>200時間になるまで、今日から毎日できる業務外時間平均値</th><th>休日数</th><th>業務外時間</th></tr></thead><tbody>`;
-  members.forEach(member=>{
-    let workDays = 0, restDays = 0, halfRestDays = 0, totalWorkHours = 0, totalOT = 0, notFilledDays = 0, totalHalfRestWork = 0;
-    let lastFilledDay = -1;
+  // まず各メンバーごとの統計を先に計算して配列に格納する（後でヘッダの表示を決めるため）
+  const memberStats = members.map(member=>{
+    // 今月の1日から締め日までの出勤/休/未入力の集計
+    let restDays = 0, workDays = 0, halfRestDays = 0, notFilledDays = 0, totalWorkHours = 0;
     let workHoursArr = [];
-  
-  // 締め日までの勤務時間および出勤/休の集計のみ行う（同上）
-
-  // 今月の1日から締め日までの出勤/休/未入力の集計
-    restDays = 0;
-    workDays = 0;
-    halfRestDays = 0;
-    notFilledDays = 0;
     for(let d=0; d<statDaysCount; d++){
       const day = member.days[d];
       let isHalfRest = false;
-      let checkin = day.values && day.values[0];
-      let checkout = day.values && day.values[1];
-      if(day.type === '休') {
-        restDays++;
-        continue;
-      }
+      const checkin = day.values && day.values[0];
+      const checkout = day.values && day.values[1];
+      if(day.type === '休'){ restDays++; continue; }
       if((checkin === '13:00') || (checkout === '12:00')) isHalfRest = true;
       if(isHalfRest) halfRestDays++;
       if(checkin && checkout){
         workDays++;
         let wh = 0;
-        let inH = parseInt(checkin.split(':')[0],10), inM = parseInt(checkin.split(':')[1],10);
-        let outH = parseInt(checkout.split(':')[0],10), outM = parseInt(checkout.split(':')[1],10);
+        const [inH,inM] = checkin.split(':').map(x=>parseInt(x,10));
+        const [outH,outM] = checkout.split(':').map(x=>parseInt(x,10));
         if(isHalfRest){
-          if(checkout === '12:00'){
-            wh = (12*60 - (inH*60+inM))/60;
-          }else if(checkin === '13:00'){
-            wh = (outH*60+outM - (17*60+30))/60;
-          }
-        }else{
+          if(checkout === '12:00') wh = (12*60 - (inH*60+inM))/60;
+          else if(checkin === '13:00') wh = (outH*60+outM - (13*60))/60;
+        } else {
           wh = (outH*60+outM - inH*60-inM)/60 - 1;
         }
         if(wh < 0) wh = 0;
         workHoursArr.push(wh);
         totalWorkHours += wh;
-        lastFilledDay = d;
-      }else{
+      } else {
         notFilledDays++;
       }
     }
-  // 月全体の（元の）統計を計算する: 出勤日数、休日日数、今月の予想稼働時間、200時間との差分、残り配分可能な残業、標準工時配分
-    let workDays_full = 0,workDays_days = 0, restDays_full = 0, halfRestDays_full = 0, notFilledDays_full = 0, totalWorkHours_full = 0;
+
+    // 月全体（整月）の統計
+    let restDays_full = 0, halfRestDays_full = 0, notFilledDays_full = 0, totalWorkHours_full = 0, workDays_days = 0;
     for(let d=0; d<daysCount; d++){
       const day = member.days[d];
-      if(day.type === '休') { restDays_full++; continue; }
-      let checkin = day.values && day.values[0];
-      let checkout = day.values && day.values[1];
+      if(day.type === '休'){ restDays_full++; continue; }
+      const checkin = day.values && day.values[0];
+      const checkout = day.values && day.values[1];
       let isHalf = false;
       if((checkin === '13:00') || (checkout === '12:00')) isHalf = true;
       if(isHalf) halfRestDays_full++;
       if(checkin && checkout){
-        workDays_full++;
         workDays_days++;
-        let inH = parseInt(checkin.split(':')[0],10), inM = parseInt(checkin.split(':')[1],10);
-        let outH = parseInt(checkout.split(':')[0],10), outM = parseInt(checkout.split(':')[1],10);
+        const [inH,inM] = checkin.split(':').map(x=>parseInt(x,10));
+        const [outH,outM] = checkout.split(':').map(x=>parseInt(x,10));
         let wh = 0;
         if(isHalf){
           if(checkout === '12:00') wh = (12*60 - (inH*60+inM))/60;
-          else if(checkin === '13:00') wh = (outH*60+outM - (17*60+30))/60;
-        }else{
+          else if(checkin === '13:00') wh = (outH*60+outM - (13*60))/60;
+        } else {
           wh = (outH*60+outM - inH*60-inM)/60 - 1;
         }
         if(wh < 0) wh = 0;
         totalWorkHours_full += wh;
-      }else{
+      } else {
         notFilledDays_full++;
       }
     }
-  // a. 出勤日数（整月の元計算）：稼働日 - 休日 + 半休（0.5として計上）
-  workDays_full = daysCount - restDays_full - halfRestDays_full + halfRestDays_full*0.5;
-  // 出勤日数（半休含む）
-    workDays_days = daysCount - restDays_full
-  // b. 休日数（整月）
-    let statRestDays_full = restDays_full + halfRestDays_full*0.5;
-  // c. 予想総労働時間（整月の元ロジック）= 入力済み(整月) + 未入力日数(整月) * 7.5
-    let estWorkHours_full = totalWorkHours_full + notFilledDays_full*7.5;
-  // d. 締め日時点の累計労働時間（締め日までに入力された時間）
-    let statWorkHours = totalWorkHours;
-    // b. 休日数 = 休日 + 半休
-    // let statRestDays = restDays + halfRestDays*0.5;
-  // c. 予想総労働時間 = 入力済み労働時間 + 未入力日数 * 7.5
-  // let estWorkHours = totalWorkHours + notFilledDays*7.5;
-    // e. 締め日時点の累計残業
-    let statOT = 0;
-    let statOTLaw = 0;
-  // 締め日までの残業のみを集計する
-    statOT = 0;
-    statOTLaw = 0;
+    const workDays_full = daysCount - restDays_full - halfRestDays_full + halfRestDays_full*0.5;
+    workDays_days = daysCount - restDays_full;
+    const statRestDays_full = restDays_full + halfRestDays_full*0.5;
+    const estWorkHours_full = totalWorkHours_full + notFilledDays_full*7.5;
+    const statWorkHours = totalWorkHours;
+
+    // 締め日までの残業集計
+    let statOT = 0, statOTLaw = 0;
     for(let d=0; d<daysCount; d++){
       const dayDate = new Date(statYear, statMonth, d+1);
       if(dayDate > cutoff) continue;
-      const day = member.days[d];
-      if(day.type === '休') continue;
-      let checkin = day.values && day.values[0];
-      let checkout = day.values && day.values[1];
-      let ot = 0;
-      let otLaw = 0;
+      const day = member.days[d]; if(day.type === '休') continue;
+      const checkin = day.values && day.values[0];
+      const checkout = day.values && day.values[1];
       if(checkin && checkout){
         if(checkin === '13:00'){
-          let outH = parseInt(checkout.split(':')[0],10), outM = parseInt(checkout.split(':')[1],10);
-          ot = (outH*60+outM - (17*60+30))/60;
-          otLaw = (outH*60+outM - (18*60))/60;
-          if(ot < 0) ot = 0;
-          if(otLaw < 0) otLaw = 0;
-        }else if(checkout === '12:00'){
-          ot = 0;
-          otLaw = 0;
-        }else{
-          let inH = parseInt(checkin.split(':')[0],10), inM = parseInt(checkin.split(':')[1],10);
-          let outH = parseInt(checkout.split(':')[0],10), outM = parseInt(checkout.split(':')[1],10);
-          ot = (outH*60+outM - inH*60-inM)/60 - 1 - 7.5;
-          otLaw = (outH*60+outM - inH*60-inM)/60 - 1 - 8;
-          if(ot < 0) ot = 0;
-          if(otLaw < 0) otLaw = 0;
+          const [outH,outM] = checkout.split(':').map(x=>parseInt(x,10));
+          let ot = (outH*60+outM - (17*60+30))/60; if(ot < 0) ot = 0;
+          let otLaw = (outH*60+outM - (18*60))/60; if(otLaw < 0) otLaw = 0;
+          statOT += ot; statOTLaw += otLaw;
+        } else if(checkout === '12:00'){
+          // no OT
+        } else {
+          const [inH,inM] = checkin.split(':').map(x=>parseInt(x,10));
+          const [outH,outM] = checkout.split(':').map(x=>parseInt(x,10));
+          let ot = (outH*60+outM - inH*60-inM)/60 - 1 - 7.5; if(ot < 0) ot = 0;
+          let otLaw = (outH*60+outM - inH*60-inM)/60 - 1 - 8; if(otLaw < 0) otLaw = 0;
+          statOT += ot; statOTLaw += otLaw;
         }
-        if(ot < 0) ot = 0;
-        statOT += ot;
-
-        if(otLaw < 0) otLaw = 0;
-        statOTLaw += otLaw;
       }
     }
-  // f. 200時間との差額（整月予測に基づく）
-  let diff200 = 200 - estWorkHours_full;
-  // g. 残り割り当て可能な残業 = diff200 / 未入力日数(整月)
-  // remainDays = workDays_days - workDays - (半休合計 - すでにある半休)
-  let remainDays = workDays_days - workDays - (halfRestDays_full - halfRestDays);
-  // let remainDays = notFilledDays_full;
-  let remainOT = remainDays > 0 ? diff200/remainDays : 0;
-  // h. 標準労働時間の配分（整月の元ロジック）: (200 - 入力済み(締め日まで) - 半休の工時) / (出勤日数(整月) - 半休日数(整月))
-  // ここでは配分ロジックの意味を保つため、入力済み工時に締め日時点の statWorkHours を使用する
-  // let stdWork = (workDays_full - halfRestDays_full) > 0 ? (200 - statWorkHours - halfRestDays_full*0.5)/(workDays_full - halfRestDays_full) : 0;
-  html += `<tr><td>${member.name}</td><td>${workDays_days}日(${workDays}日)</td><td>${statWorkHours.toFixed(2)}</td><td>${estWorkHours_full.toFixed(2)}</td><td>${diff200.toFixed(2)}</td><td>${remainOT.toFixed(2)}</td><td>${statRestDays_full.toFixed(2)}</td><td>${statOT.toFixed(2)}(${statOTLaw.toFixed(2)})</td></tr>`;
+
+    // f/g/h
+    const diff200 = 200 - estWorkHours_full;
+    const remainDays = workDays_days - workDays - (halfRestDays_full - halfRestDays);
+    const remainOT = remainDays > 0 ? diff200 / remainDays : 0;
+
+    // 统计日之后到月底的该成员剩余工作日数（用于 140 小时计算的日均分配）
+    let remainingWorkDaysAfterStat = 0;
+    for(let d = statDaysCount; d < daysCount; d++){
+      const day = member.days[d]; if(day && day.type !== '休') remainingWorkDaysAfterStat++;
+    }
+
+    return {
+      name: member.name,
+      workDays_days,
+      workDays,
+      statWorkHours,
+      estWorkHours_full,
+      diff200,
+      remainOT,
+      statRestDays_full,
+      statOT,
+      statOTLaw,
+      remainingWorkDaysAfterStat
+    };
   });
+
+  // ヘッダに (140時間) を表示するか（メンバーのうち1人でも予想工時 < 140 の場合に表示）
+  const anyBelow140 = memberStats.some(ms => ms.estWorkHours_full < 140 - 1e-6);
+  // ヘッダ作成
+  let html = '<table class="stat-table" border="1" cellpadding="4" style="border-collapse:collapse;min-width:900px;font-size:13px">';
+  const remHeader = anyBelow140
+    ? `<th><span style="color:#429af1">200時間</span><span style="color:#f00">(140時間)</span>までの残り業務時間</th>`
+    : `<th>200時間までの残り業務時間</th>`;
+  const avgHeader = anyBelow140
+    ? `<th><span style="color:#429af1">200時間</span><span style="color:#f00">(140時間)</span>になるまで、今日から毎日できる業務外時間平均値</th>`
+    : `<th>200時間になるまで、今日から毎日できる業務外時間平均値</th>`;
+
+  html += `<thead><tr><th>名前</th><th>出勤日数(${statDaysCount}日までの出勤日数)</th><th>${statDaysCount}日までの稼働時間</th><th>今月の予想稼働時間</th>${remHeader}${avgHeader}<th>休日数</th><th>業務外時間</th></tr></thead><tbody>`;
+
+  // 各メンバーの行を追加
+  memberStats.forEach(ms=>{
+    // 表示のカスタマイズ：予測が 140 未満の場合は特別表示
+    let remDisplay = `<span style="color:#429af1">${ms.diff200.toFixed(2)}</span>`;
+    let avgDisplay = `<span style="color:#429af1">${ms.remainOT.toFixed(2)}</span>`;
+    if(ms.estWorkHours_full < 140 - 1e-6){
+      const shortage = 140 - ms.estWorkHours_full;
+      remDisplay = `<span style="color:#f00">(${shortage.toFixed(2)})</span>`;
+      const days = ms.remainingWorkDaysAfterStat || 1; // 0 の場合は 1 で割る（極端ケースの保険）
+      const perDay = shortage / days;
+      avgDisplay = `<span style="color:#f00">(${perDay.toFixed(2)})</span>`;
+    }
+
+    html += `<tr><td>${ms.name}</td><td>${ms.workDays_days}日(${ms.workDays}日)</td><td>${ms.statWorkHours.toFixed(2)}</td><td>${ms.estWorkHours_full.toFixed(2)}</td><td>${remDisplay}</td><td>${avgDisplay}</td><td>${ms.statRestDays_full.toFixed(2)}</td><td>${ms.statOT.toFixed(2)}(${ms.statOTLaw.toFixed(2)})</td></tr>`;
+  });
+
   html += '</tbody></table>';
   document.getElementById('statTableContainer').innerHTML = html;
 }
@@ -449,6 +454,28 @@ function renderTableForCurrent(){
   if(store.current < 0 || !store.sheets[store.current]){ document.getElementById('sheetTitle').textContent = '（勤務表を未選択）'; return; }
   const sheet = store.sheets[store.current];
   const sheetTitleEl = document.getElementById('sheetTitle');
+  // ヘルパー: 日付文字列 'HH:MM' を分に変換
+  function parseTimeToMinutes(t){ if(!t) return null; const parts = String(t).split(':'); if(parts.length<2) return null; const h = parseInt(parts[0],10); const m = parseInt(parts[1],10); if(isNaN(h)||isNaN(m)) return null; return h*60 + m; }
+  // ヘルパー: day オブジェクトからその日の実働分数を計算する（概算）
+  function computeMinutesFromDay(dayObj){
+    if(!dayObj || dayObj.type === '休') return 0;
+    const vals = Array.isArray(dayObj.values) ? dayObj.values : [];
+    const checkin = vals[0] || '';
+    const checkout = vals[1] || '';
+    // 半休判定
+    if(checkin === '13:00' || checkout === '12:00'){
+      if(checkout === '12:00' && checkin){ const inMin = parseTimeToMinutes(checkin); if(inMin==null) return 0; return Math.max(0, 12*60 - inMin); }
+      if(checkin === '13:00' && checkout){ const outMin = parseTimeToMinutes(checkout); if(outMin==null) return 0; return Math.max(0, outMin - 13*60); }
+    }
+    // 通常の出退勤
+    if(checkin && checkout){ const inMin = parseTimeToMinutes(checkin); const outMin = parseTimeToMinutes(checkout); if(inMin==null||outMin==null) return 0; const mins = outMin - inMin - 60; return mins>0? mins:0; }
+    // 複数コンポーネントの合算（ペアで計算）
+    let total = 0;
+    for(let ci=0; ci+1<vals.length; ci+=2){ const a = vals[ci], b = vals[ci+1]; if(a && b){ const am = parseTimeToMinutes(a), bm = parseTimeToMinutes(b); if(am!=null && bm!=null){ const wh = bm - am; if(!isNaN(wh)) total += Math.max(0, wh); } } }
+    return total;
+  }
+  // ヘルパー: 分を「7h30m」形式に整形（0 は空文字列として返す）
+  function formatMinutesToHM(mins){ if(!mins || mins <= 0) return ''; const h = Math.floor(mins/60); const m = mins % 60; if(h>0){ return m? (h + 'h' + String(m).padStart(2,'0') + 'm') : (h + 'h'); } return (m + 'm'); }
   // sheetTitleEl.textContent = `${sheet.year}年 ${sheet.month}月 — ${sheet.components} 項目/日`;
   sheetTitleEl.textContent = `${sheet.year}年 ${sheet.month}月`;
   // トグルボタン
@@ -571,7 +598,8 @@ function renderTableForCurrent(){
             const st = readStore(); if(st.current<0) return; const val = e.target.value;
             if(c===0 && val === '休'){ st.sheets[st.current].members[mi].days[di].type = '休'; st.sheets[st.current].members[mi].days[di].values = null; writeStore(st); renderAll(); return; }
             const targetDay = st.sheets[st.current].members[mi].days[di]; if(targetDay.type === '休'){ targetDay.type='work'; targetDay.values = Array.from({length: st.sheets[st.current].components}, ()=>''); }
-            st.sheets[st.current].members[mi].days[di].values[c] = val; writeStore(st);
+            st.sheets[st.current].members[mi].days[di].values[c] = val; writeStore(st); // 保存後に即座に再描画して日別実働時間を更新
+            renderAll();
           });
           wrapper.appendChild(sel);
         }
@@ -582,6 +610,7 @@ function renderTableForCurrent(){
     });
     // 操作列（最後の列）: 包含 タイプ ドロップダウン と 削除 ボタン
     const opsTd = document.createElement('td'); opsTd.className = 'cell-ops';
+  
   // プリセット選択（タイプ）
     const presetSel2 = document.createElement('select');
     const ph2 = document.createElement('option'); ph2.value=''; ph2.textContent='タイプ'; presetSel2.appendChild(ph2);
@@ -633,6 +662,44 @@ function renderTableForCurrent(){
     opsTd.appendChild(delBtn2);
     tr.appendChild(opsTd);
     tbody.appendChild(tr);
+    // --- 追加行: 各日の実働時間を表示する行を作成 ---
+    const hoursTr = document.createElement('tr');
+    hoursTr.className = 'member-daily-hours-row';
+    const hoursNameTd = document.createElement('td');
+    hoursNameTd.className = 'member-name';
+    hoursNameTd.textContent = '日毎(時間)';
+    hoursTr.appendChild(hoursNameTd);
+
+    // 各日について集計して小セルを作る
+    visibleDays.forEach(d=>{
+      const di = d-1; const dayObj = member.days[di]; const td = document.createElement('td');
+      if(!dayObj || dayObj.type === '休'){
+        td.textContent = '0'; 
+        td.className = 'cell-weekend';
+      } else {
+        // 分単位で計算し、HHhMMm 形式で表示
+        const mins = computeMinutesFromDay(dayObj);
+        td.textContent = formatMinutesToHM(Math.round(mins));
+        td.className = 'member-daily-hours';
+      }
+      hoursTr.appendChild(td);
+    });
+    
+    // メンバーの月合計時間を計算して表示（分 -> HhMm 表示）
+    const hoursOpTd = document.createElement('td'); 
+    hoursOpTd.className = 'cell-ops'; 
+    let memberTotalMins = 0;
+    for(let dd = 0; dd < sheet.members[mi].days.length; dd++){
+      const dm = computeMinutesFromDay(sheet.members[mi].days[dd]);
+      memberTotalMins += dm;
+    }
+    const totalSpan = document.createElement('span'); totalSpan.className = 'member-total-hours';
+    totalSpan.style.marginRight = '8px'; totalSpan.style.fontWeight = '600';
+    totalSpan.textContent = '合計: ' + (formatMinutesToHM(memberTotalMins) || '0h');
+    hoursOpTd.appendChild(totalSpan);
+    hoursTr.appendChild(hoursOpTd);
+
+    tbody.appendChild(hoursTr);
   });
   tbl.appendChild(tbody); container.appendChild(tbl);
 }

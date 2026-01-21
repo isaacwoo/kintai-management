@@ -87,7 +87,7 @@ table tr:nth-child(even){background-color: #f3f3f3;}
   pointer-events: none;
   z-index: 5;
   border-radius: 2px;
-  background: linear-gradient(180deg, #f38ab1, #e411b6, #00c6ff, #7bff00);
+  background: linear-gradient(180deg, #f38ab1, #d40faa, #00c6ff, #7bff00);
   background-size: 200% 200%;
   animation: gradientShiftBorder 3.5s linear infinite;
   opacity: 0.95;
@@ -109,6 +109,11 @@ table tr:nth-child(even){background-color: #f3f3f3;}
 .day-inputs input{width:44px;padding:6px;border:1px solid #ddd;border-radius:4px;text-align:center}
 .day-inputs select{width:100%;max-width:120px;padding:6px;border:1px solid #ddd;border-radius:4px;background:#fff;font-size:0.95rem}
 .sheet-title{font-weight:600;margin-bottom:8px}
+
+/* メンバーごとの日別実働時間行 */
+.member-daily-hours-row td{background:#fbfdff;color:#246;font-size:0.9rem;padding:6px 8px;border-bottom:1px solid #eef;text-align:center}
+.member-daily-hours-row .member-name{font-weight:600;background:#fff}
+.member-daily-hours{color:#246}
 
 /* 列が切り替え可能であることを示す（ホバーでヒント） */
 thead th{cursor:default}
