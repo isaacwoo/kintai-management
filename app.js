@@ -135,8 +135,17 @@ function renderStatTable(cutoffDate){
     };
   });
 
+  // 各メンバーについて、締め日基準の予想（締め日までの実働 + 締め日以降の残業日数*7.5）を計算
+  memberStats.forEach(ms => {
+    ms.estCutoff = ms.statWorkHours + (ms.remainingWorkDaysAfterStat || 0) * 7.5;
+    ms.diff200_cutoff = 200 - ms.estCutoff;
+    ms.remainDays_cutoff = ms.remainingWorkDaysAfterStat || 0;
+    ms.perDayCutoff = ms.remainDays_cutoff > 0 ? (ms.diff200_cutoff / ms.remainDays_cutoff) : 0;
+  });
+
   // ヘッダに (140時間) を表示するか（メンバーのうち1人でも予想工時 < 140 の場合に表示）
-  const anyBelow140 = memberStats.some(ms => ms.estWorkHours_full < 140 - 1e-6);
+  // 締め日基準の予想が140時間未満のメンバーがいるか
+  const anyBelow140 = memberStats.some(ms => ms.estCutoff < 140 - 1e-6);
   // ヘッダ作成
   let html = '<table class="stat-table" border="1" cellpadding="4" style="border-collapse:collapse;min-width:900px;font-size:13px">';
   const remHeader = anyBelow140
@@ -146,22 +155,35 @@ function renderStatTable(cutoffDate){
     ? `<th><span style="color:#429af1">200時間</span><span style="color:#f00">(140時間)</span>になるまで、今日から毎日できる業務外時間平均値</th>`
     : `<th>200時間になるまで、今日から毎日できる業務外時間平均値</th>`;
 
-  html += `<thead><tr><th>名前</th><th>出勤日数(${statDaysCount}日までの出勤日数)</th><th>${statDaysCount}日までの稼働時間</th><th>今月の予想稼働時間</th>${remHeader}${avgHeader}<th>休日数</th><th>業務外時間</th></tr></thead><tbody>`;
+  html += `<thead><tr><th>名前</th><th>出勤日数(${statDaysCount}日までの出勤日数)</th><th>${statDaysCount}日までの稼働時間</th><th>締め日基準の予想稼働時間</th>${remHeader}${avgHeader}<th>休日数</th><th>業務外時間</th></tr></thead><tbody>`;
 
   // 各メンバーの行を追加
   memberStats.forEach(ms=>{
-    // 表示のカスタマイズ：予測が 140 未満の場合は特別表示
-    let remDisplay = `<span style="color:#429af1">${ms.diff200.toFixed(2)}</span>`;
-    let avgDisplay = `<span style="color:#429af1">${ms.remainOT.toFixed(2)}</span>`;
-    if(ms.estWorkHours_full < 140 - 1e-6){
-      const shortage = 140 - ms.estWorkHours_full;
-      remDisplay = `<span style="color:#f00">(${shortage.toFixed(2)})</span>`;
-      const days = ms.remainingWorkDaysAfterStat || 1; // 0 の場合は 1 で割る（極端ケースの保険）
-      const perDay = shortage / days;
-      avgDisplay = `<span style="color:#f00">(${perDay.toFixed(2)})</span>`;
+    // 締め日基準の表示：HhMm 形式に整形
+    const statWorkMins = hoursToMinutes(ms.statWorkHours);
+    const estCutoffMins = hoursToMinutes(ms.estCutoff);
+
+    // 残り（200 - 締め日基準予想）および日別で必要な時間を計算して表示
+    let remDisplay = `<span style="color:#429af1">${formatMinutesToHM(Math.max(0, hoursToMinutes(ms.diff200)))}</span>`;
+    let avgDisplay = `<span style="color:#429af1">${formatMinutesToHM(hoursToMinutes(ms.remainOT))}</span>`;
+    if(ms.estCutoff < 140 - 1e-6){
+      const shortageH = 140 - ms.estCutoff;
+      const shortageM = hoursToMinutes(shortageH);
+      remDisplay = `<span style="color:#f00">(${formatMinutesToHM(shortageM)})</span>`;
+      const days = ms.remainDays_cutoff || 1;
+      const perDayH = shortageH / days;
+      avgDisplay = `<span style="color:#f00">(${formatMinutesToHM(hoursToMinutes(perDayH))})</span>`;
+    } else {
+      // 200 時間到達のための差（締め日基準）
+      const diff200_cutoff = ms.diff200_cutoff;
+      remDisplay = `<span style="color:#429af1">${formatMinutesToHM(hoursToMinutes(Math.max(0, diff200_cutoff)))}</span>`;
+      const perDayH = ms.perDayCutoff;
+      avgDisplay = `<span style="color:#429af1">${formatMinutesToHM(hoursToMinutes(Math.max(0, perDayH)))}</span>`;
     }
 
-    html += `<tr><td>${ms.name}</td><td>${ms.workDays_days}日(${ms.workDays}日)</td><td>${ms.statWorkHours.toFixed(2)}</td><td>${ms.estWorkHours_full.toFixed(2)}</td><td>${remDisplay}</td><td>${avgDisplay}</td><td>${ms.statRestDays_full.toFixed(2)}</td><td>${ms.statOT.toFixed(2)}(${ms.statOTLaw.toFixed(2)})</td></tr>`;
+    // 今月の予想は締め日基準の予想を表示。全月ベースの予想は title に入れる
+    const estFullTitle = `全月予想: ${formatMinutesToHM(hoursToMinutes(ms.estWorkHours_full))}`;
+    html += `<tr><td>${ms.name}</td><td>${ms.workDays_days}日(${ms.workDays}日)</td><td>${formatMinutesToHM(statWorkMins)}</td><td title="${estFullTitle}">${formatMinutesToHM(estCutoffMins)}</td><td>${remDisplay}</td><td>${avgDisplay}</td><td>${ms.statRestDays_full.toFixed(2)}</td><td>${ms.statOT.toFixed(2)}(${ms.statOTLaw.toFixed(2)})</td></tr>`;
   });
 
   html += '</tbody></table>';
@@ -405,6 +427,11 @@ function writeStore(store){ localStorage.setItem(STORAGE_KEY, JSON.stringify(sto
 
 function daysInMonth(y,m){ return new Date(y, m, 0).getDate(); }
 function weekdayOf(y,m,d){ return new Date(y, m-1, d).getDay(); }
+
+// ヘルパ: 小数時間（例: 7.5）→分に変換
+function hoursToMinutes(h){ return Math.round((h || 0) * 60); }
+// ヘルパ: 分を "7h30m" 形式に整形。0分は '0h' を返す
+function formatMinutesToHM(mins){ if(mins == null || isNaN(mins)) return '0h'; mins = Math.round(mins); if(mins <= 0) return '0h'; const h = Math.floor(mins/60); const m = mins % 60; if(h>0) return m? (h + 'h' + String(m).padStart(2,'0') + 'm') : (h + 'h'); return (m + 'm'); }
 
 function openNewModal(){
   const modal = document.getElementById('newModal');
