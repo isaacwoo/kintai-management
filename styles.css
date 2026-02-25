@@ -115,16 +115,68 @@ table tr:nth-child(even){background-color: #f3f3f3;}
 .member-daily-hours-row .member-name{font-weight:600;background:#fff}
 .member-daily-hours{color:#246}
 
+/* カレンダーグリッド（モーダル内） */
+#calendarSaveBtn{display: none;}
+.calendar-grid{display:grid;grid-template-columns:repeat(7, 1fr);gap:6px;margin-top:8px;flex:1 1 auto;overflow:auto;padding-bottom:8px}
+.calendar-cell{background:#fff;border:1px solid #e6edf5;border-radius:6px;padding:8px;min-height:140px;position:relative}
+.calendar-cell .date-label{position:absolute;top:6px;left:8px;font-size:0.85rem;color:#666}
+.calendar-cell .work-summary{margin-top:20px;font-size:0.95rem;color:#246}
+.calendar-cell .note{margin-top:6px;font-size:0.85rem;color:#444;border-top:1px dashed #eee;padding-top:4px}
+.calendar-cell.weekend{background:#fafafa;color:#999}
+.calendar-cell.today{box-shadow:0 0 0 3px rgba(34,128,255,0.06);border-color:#2aa0ff}
+/* 明示的に休みに変更された日を緑で強調 */
+.calendar-cell.rest{background:linear-gradient(180deg,#eef9ef,#e6fff0);border-color:#bff0c6}
+.calendar-cell .time-range{margin-top:20px;font-size:0.85rem;color:#246}
+
+/* 曜日ヘッダをグリッド全幅に広げ、7列で並べる */
+.calendar-weekdays{grid-column:1 / -1;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:0}
+.weekday-header{background:transparent;text-align:center;padding:6px 4px;font-weight:700;color:#444;border-radius:4px}
+
+/* 空セル（先頭と末尾のダミー）を目立たせず最小高さにする */
+.calendar-cell.empty{background:transparent;border:0;box-shadow:none;min-height:20px}
+
+/* メイン表のセルに表示する備考アイコン */
+.cell-note-indicator{position:absolute;right:6px;top:6px;font-size:0.9rem}
+.cell-time-summary{display:block;margin-top:6px;font-size:0.85rem;color:#444}
+
+/* 備考ポップオーバー */
+.note-popover{position:fixed;z-index:120;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center}
+.note-popover-content{background:#fff;padding:12px;border-radius:8px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.18)}
+.note-popover textarea{font-family:inherit}
+.cell-note-text{font-size:0.85rem;color:#333;background:rgba(250,250,250,0.6);padding:2px 6px;border-radius:4px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 備考を示す小さなバッジ（セル右上） */
+.cell-note-badge{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:#fff;border:1px solid #2a9df4;display:flex;align-items:center;justify-content:center;font-size:12px;color:#2a9df4;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.12)}
+.cell-note-badge:hover{transform:scale(1.08);box-shadow:0 2px 6px rgba(0,0,0,0.16)}
+
 /* 列が切り替え可能であることを示す（ホバーでヒント） */
 thead th{cursor:default}
 thead th:hover{background:#eaf2ff}
 
 /* modal */
-.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);z-index: 99;}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);z-index: 99;padding:20px}
 .modal[aria-hidden="false"]{display:flex}
-.modal-content{background:#fff;padding:16px;border-radius:8px;min-width:320px;box-shadow:0 6px 18px rgba(0,0,0,0.12)}
+.modal-content{background:#fff;padding:12px;border-radius:8px;min-width:320px;box-shadow:0 6px 18px rgba(0,0,0,0.12);display:flex;flex-direction:column;max-height:calc(100vh - 40px);overflow:hidden;width:min(95vw,1000px)}
 .form-row{display:flex;gap:8px;align-items:center;margin:8px 0}
 .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+/* 共通ボタンスタイル */
+.btn{background:#246;color:#fff;border:0;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:0.95rem}
+.btn[disabled]{opacity:0.6;cursor:not-allowed}
+.btn-secondary{background:#f5f7fa;color:#333;border:1px solid #d8dce6}
+.modal-content .btn{min-width:84px}
+
+/* 操作列（カレンダーボタン＋タイプ選択＋削除）が横並びで中央揃えになるようにする */
+.cell-ops{align-items:center;gap:8px}
+.cell-ops .btn{padding:6px 8px;font-size:0.9rem}
+.cell-ops select{padding:6px;border:1px solid #dcdfe6;border-radius:4px;background:#fff}
+.cell-ops .member-total-hours{display:block}
+
+/* 小さめのボタン（削除など） */
+.btn.small{padding:4px 8px;font-size:0.85rem}
+
+/* モーダル内部のフッターを常に表示する：カレンダーなど高さのある内容はスクロールさせる */
+.modal-content .form-actions{position:sticky;bottom:0;background:linear-gradient(to top, rgba(255,255,255,0.95), rgba(255,255,255,0.6));padding-top:8px;margin-top:8px}
 
 @media (max-width:900px){
   .app-layout{flex-direction:column;padding:12px}

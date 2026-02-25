@@ -155,7 +155,7 @@ function renderStatTable(cutoffDate){
     ? `<th><span style="color:#429af1">200時間</span><span style="color:#f00">(140時間)</span>になるまで、今日から毎日できる業務外時間平均値</th>`
     : `<th>200時間になるまで、今日から毎日できる業務外時間平均値</th>`;
 
-  html += `<thead><tr><th>名前</th><th>出勤日数(${statDaysCount}日までの出勤日数)</th><th>${statDaysCount}日までの稼働時間</th><th>締め日基準の予想稼働時間</th>${remHeader}${avgHeader}<th>休日数</th><th>業務外時間</th></tr></thead><tbody>`;
+  html += `<thead><tr><th>名前</th><th>出勤日数(${statDaysCount}日までの出勤日数)</th><th>${statDaysCount}日までの稼働時間</th><th>今月の予想稼働時間</th>${remHeader}${avgHeader}<th>休日数</th><th>業務外時間</th></tr></thead><tbody>`;
 
   // 各メンバーの行を追加
   memberStats.forEach(ms=>{
@@ -433,6 +433,31 @@ function hoursToMinutes(h){ return Math.round((h || 0) * 60); }
 // ヘルパ: 分を "7h30m" 形式に整形。0分は '0h' を返す
 function formatMinutesToHM(mins){ if(mins == null || isNaN(mins)) return '0h'; mins = Math.round(mins); if(mins <= 0) return '0h'; const h = Math.floor(mins/60); const m = mins % 60; if(h>0) return m? (h + 'h' + String(m).padStart(2,'0') + 'm') : (h + 'h'); return (m + 'm'); }
 
+// ヘルパ: debounce
+function debounce(fn, wait){ let t = null; return function(...args){ clearTimeout(t); t = setTimeout(()=>fn.apply(this,args), wait); }; }
+
+// ヘルパ: 日付文字列 'HH:MM' を分に変換（トップレベル）
+function parseTimeToMinutes(t){ if(!t) return null; const parts = String(t).split(':'); if(parts.length<2) return null; const h = parseInt(parts[0],10); const m = parseInt(parts[1],10); if(isNaN(h)||isNaN(m)) return null; return h*60 + m; }
+
+// ヘルパ: day オブジェクトからその日の実働分数を計算する（概算、トップレベル）
+function computeMinutesFromDay(dayObj){
+  if(!dayObj || dayObj.type === '休') return 0;
+  const vals = Array.isArray(dayObj.values) ? dayObj.values : [];
+  const checkin = vals[0] || '';
+  const checkout = vals[1] || '';
+  // 半休判定
+  if(checkin === '13:00' || checkout === '12:00'){
+    if(checkout === '12:00' && checkin){ const inMin = parseTimeToMinutes(checkin); if(inMin==null) return 0; return Math.max(0, 12*60 - inMin); }
+    if(checkin === '13:00' && checkout){ const outMin = parseTimeToMinutes(checkout); if(outMin==null) return 0; return Math.max(0, outMin - 13*60); }
+  }
+  // 通常の出退勤
+  if(checkin && checkout){ const inMin = parseTimeToMinutes(checkin); const outMin = parseTimeToMinutes(checkout); if(inMin==null||outMin==null) return 0; const mins = outMin - inMin - 60; return mins>0? mins:0; }
+  // 複数コンポーネントの合算（ペアで計算）
+  let total = 0;
+  for(let ci=0; ci+1<vals.length; ci+=2){ const a = vals[ci], b = vals[ci+1]; if(a && b){ const am = parseTimeToMinutes(a), bm = parseTimeToMinutes(b); if(am!=null && bm!=null){ const wh = bm - am; if(!isNaN(wh)) total += Math.max(0, wh); } } }
+  return total;
+}
+
 function openNewModal(){
   const modal = document.getElementById('newModal');
   const now = new Date();
@@ -481,28 +506,7 @@ function renderTableForCurrent(){
   if(store.current < 0 || !store.sheets[store.current]){ document.getElementById('sheetTitle').textContent = '（勤務表を未選択）'; return; }
   const sheet = store.sheets[store.current];
   const sheetTitleEl = document.getElementById('sheetTitle');
-  // ヘルパー: 日付文字列 'HH:MM' を分に変換
-  function parseTimeToMinutes(t){ if(!t) return null; const parts = String(t).split(':'); if(parts.length<2) return null; const h = parseInt(parts[0],10); const m = parseInt(parts[1],10); if(isNaN(h)||isNaN(m)) return null; return h*60 + m; }
-  // ヘルパー: day オブジェクトからその日の実働分数を計算する（概算）
-  function computeMinutesFromDay(dayObj){
-    if(!dayObj || dayObj.type === '休') return 0;
-    const vals = Array.isArray(dayObj.values) ? dayObj.values : [];
-    const checkin = vals[0] || '';
-    const checkout = vals[1] || '';
-    // 半休判定
-    if(checkin === '13:00' || checkout === '12:00'){
-      if(checkout === '12:00' && checkin){ const inMin = parseTimeToMinutes(checkin); if(inMin==null) return 0; return Math.max(0, 12*60 - inMin); }
-      if(checkin === '13:00' && checkout){ const outMin = parseTimeToMinutes(checkout); if(outMin==null) return 0; return Math.max(0, outMin - 13*60); }
-    }
-    // 通常の出退勤
-    if(checkin && checkout){ const inMin = parseTimeToMinutes(checkin); const outMin = parseTimeToMinutes(checkout); if(inMin==null||outMin==null) return 0; const mins = outMin - inMin - 60; return mins>0? mins:0; }
-    // 複数コンポーネントの合算（ペアで計算）
-    let total = 0;
-    for(let ci=0; ci+1<vals.length; ci+=2){ const a = vals[ci], b = vals[ci+1]; if(a && b){ const am = parseTimeToMinutes(a), bm = parseTimeToMinutes(b); if(am!=null && bm!=null){ const wh = bm - am; if(!isNaN(wh)) total += Math.max(0, wh); } } }
-    return total;
-  }
-  // ヘルパー: 分を「7h30m」形式に整形（0 は空文字列として返す）
-  function formatMinutesToHM(mins){ if(!mins || mins <= 0) return ''; const h = Math.floor(mins/60); const m = mins % 60; if(h>0){ return m? (h + 'h' + String(m).padStart(2,'0') + 'm') : (h + 'h'); } return (m + 'm'); }
+  // ...existing code...
   // sheetTitleEl.textContent = `${sheet.year}年 ${sheet.month}月 — ${sheet.components} 項目/日`;
   sheetTitleEl.textContent = `${sheet.year}年 ${sheet.month}月`;
   // トグルボタン
@@ -630,7 +634,31 @@ function renderTableForCurrent(){
           });
           wrapper.appendChild(sel);
         }
-        td.appendChild(wrapper);
+          td.appendChild(wrapper);
+          // 備考があればメイン表セルに短文を常時表示し、クリックで詳細ポップオーバーを開ける
+          if(dayObj && dayObj.note){
+            const raw = String(dayObj.note || '');
+            const badge = document.createElement('span');
+            badge.className = 'cell-note-badge';
+            badge.textContent = '✎';
+            badge.title = raw || '備考';
+            badge.setAttribute('role','button');
+            badge.setAttribute('aria-label','備考');
+            badge.addEventListener('click', (ev)=>{ ev.stopPropagation(); openNotePopover(mi, di, badge); });
+            // 親 td を相対位置にしてバッジを右上に固定表示
+            td.style.position = td.style.position || 'relative';
+            td.appendChild(badge);
+            // 追加でセル全体のタイトルにも備考を付与（ホバーで全文表示）
+            td.title = raw;
+          }
+          // コンパクトな時刻サマリ（セル内に表示）
+          if(dayObj && dayObj.type !== '休' && Array.isArray(dayObj.values)){
+            const vals2 = dayObj.values;
+            const ranges = [];
+            for(let ci2=0; ci2+1<vals2.length; ci2+=2){ const a = vals2[ci2], b = vals2[ci2+1]; if(a && b) ranges.push(`${a}-${b}`); }
+            if(ranges.length === 0 && vals2[0] && vals2[1]) ranges.push(`${vals2[0]}-${vals2[1]}`);
+            if(ranges.length){ const sumEl = document.createElement('div'); sumEl.className = 'cell-time-summary'; sumEl.textContent = ranges.join(' / '); td.appendChild(sumEl); }
+          }
         td.addEventListener('click', (e)=>{ if(e.target && e.target.tagName){ const t = e.target.tagName.toUpperCase(); if(t === 'INPUT' || t === 'SELECT' || t === 'OPTION') return; } const st = readStore(); if(st.current<0) return; const s = st.sheets[st.current]; const target = s.members[mi].days[di]; target.type='休'; target.values=null; writeStore(st); renderAll(); });
       }
       tr.appendChild(td);
@@ -682,7 +710,11 @@ function renderTableForCurrent(){
       writeStore(st);
       renderAll();
     });
-    opsTd.appendChild(presetSel2);
+  // カレンダー表示ボタン（当月のメンバー個別カレンダーを開く）
+  const calBtn = document.createElement('button'); calBtn.type='button'; calBtn.textContent = 'カレンダー'; calBtn.className='btn'; calBtn.style.marginRight = '10px';
+  calBtn.addEventListener('click', (ev)=>{ ev.stopPropagation(); openCalendarModal(mi); });
+  opsTd.appendChild(calBtn);
+  opsTd.appendChild(presetSel2);
     const delBtn2 = document.createElement('button');
     delBtn2.id = 'delMemberBtn'; delBtn2.type = 'button'; delBtn2.textContent = '削除'; delBtn2.style.marginLeft = '6px'; delBtn2.style.fontSize = '0.85em';
     delBtn2.addEventListener('click', (ev)=>{ ev.stopPropagation(); const st = readStore(); if(st.current<0) return; const s = st.sheets[st.current]; if(s.members.length <= 1){ alert('最低1名必要です'); return; } if(!confirm('このメンバーを削除しますか？')) return; s.members.splice(mi,1); writeStore(st); renderAll(); });
@@ -749,6 +781,144 @@ function deleteAllSheets(){
 function exportCSVCurrent(){ const store = readStore(); if(store.current<0) return alert('勤務表を未選択'); const s = store.sheets[store.current]; const headers = ['名前']; for(let d=1; d<=daysInMonth(s.year,s.month); d++) headers.push(`${d}`); const rows = s.members.map(m=>{ const arr = [m.name]; m.days.forEach(dobj=>{ if(dobj.type==='休') arr.push('休'); else arr.push(dobj.values.map(v=>v||'').join(';')); }); return arr; }); const csv = [headers, ...rows].map(r=>r.map(cell=>`"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n'); const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `sheet_${s.year}-${String(s.month).padStart(2,'0')}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
 
 function renderAll(){ renderSheetsList(); renderTableForCurrent(); }
+
+// --- カレンダーモーダル関連 ---
+const calendarModal = document.getElementById('calendarModal');
+const calendarGrid = document.getElementById('calendarGrid');
+const calendarModalTitle = document.getElementById('calendarModalTitle');
+const calendarSaveBtn = document.getElementById('calendarSaveBtn');
+const calendarCloseBtn = document.getElementById('calendarCloseBtn');
+let _calendarEditing = null; // { memberIndex }
+
+// ノートポップオーバー要素
+const notePopover = document.getElementById('notePopover');
+const notePopoverTitle = document.getElementById('notePopoverTitle');
+const notePopoverClose = document.getElementById('notePopoverClose');
+const notePopoverTextarea = document.getElementById('notePopoverTextarea');
+const notePopoverSave = document.getElementById('notePopoverSave');
+let _notePopoverState = null; // { memberIndex, dayIndex, anchor }
+
+function openNotePopover(memberIndex, dayIndex, anchorEl){
+  const store = readStore(); if(store.current<0) return; const sheet = store.sheets[store.current]; const member = sheet.members[memberIndex]; if(!member) return;
+  const dayObj = member.days[dayIndex] || {};
+  notePopoverTitle.textContent = `${member.name} - ${sheet.year}/${String(sheet.month).padStart(2,'0')}/${dayIndex+1}`;
+  notePopoverTextarea.value = dayObj.note || '';
+  notePopover.style.display = 'flex'; notePopover.setAttribute('aria-hidden','false');
+  _notePopoverState = { memberIndex, dayIndex, anchor: anchorEl };
+  // フォーカス
+  notePopoverTextarea.focus();
+}
+
+function closeNotePopover(){ notePopover.style.display = 'none'; notePopover.setAttribute('aria-hidden','true'); _notePopoverState = null; }
+
+notePopoverClose && notePopoverClose.addEventListener('click', ()=>{ closeNotePopover(); });
+notePopoverSave && notePopoverSave.addEventListener('click', ()=>{
+  if(!_notePopoverState) return; const st = readStore(); const s = st.sheets[st.current]; const m = s.members[_notePopoverState.memberIndex]; if(!m) return; const di = _notePopoverState.dayIndex; const val = String(notePopoverTextarea.value||'').trim(); if(!m.days[di]) m.days[di] = { type: '休', values: null };
+  if(val) m.days[di].note = val; else delete m.days[di].note;
+  writeStore(st); renderAll(); closeNotePopover();
+});
+// ポップオーバー内でも自動保存（入力後にデバウンス）
+notePopoverTextarea && notePopoverTextarea.addEventListener('input', debounce(function(){
+  if(!_notePopoverState) return; const st = readStore(); const s = st.sheets[st.current]; const m = s.members[_notePopoverState.memberIndex]; if(!m) return; const di = _notePopoverState.dayIndex; const val = String(this.value||'').trim(); if(!m.days[di]) m.days[di] = { type: '休', values: null };
+  if(val) m.days[di].note = val; else delete m.days[di].note;
+  writeStore(st); renderAll();
+}, 500));
+
+function openCalendarModal(memberIndex){
+  const store = readStore(); if(store.current<0) return alert('勤務表を未選択');
+  const sheet = store.sheets[store.current];
+  const member = sheet.members[memberIndex]; if(!member) return;
+  _calendarEditing = { memberIndex };
+  calendarModalTitle.textContent = `${member.name} — ${sheet.year}年 ${sheet.month}月 のカレンダー`;
+  renderCalendarGrid(memberIndex);
+  calendarModal.style.display = 'block'; calendarModal.setAttribute('aria-hidden','false');
+}
+
+function closeCalendarModal(){ calendarModal.style.display = 'none'; calendarModal.setAttribute('aria-hidden','true'); _calendarEditing = null; }
+
+function renderCalendarGrid(memberIndex){
+  const store = readStore(); const sheet = store.sheets[store.current];
+  const member = sheet.members[memberIndex];
+  calendarGrid.innerHTML = '';
+  const days = daysInMonth(sheet.year, sheet.month);
+
+  // 曜日ヘッダ（Sun - Sat / 日〜土）
+  const weekNames = ['日','月','火','水','木','金','土'];
+  const headerRow = document.createElement('div'); headerRow.className = 'calendar-weekdays';
+  for(let w=0; w<7; w++){ const h = document.createElement('div'); h.className='weekday-header'; h.textContent = weekNames[w]; headerRow.appendChild(h); }
+  calendarGrid.appendChild(headerRow);
+
+  // 先頭の空セル（その月の1日の曜日に合わせて埋める）
+  const firstWeekday = weekdayOf(sheet.year, sheet.month, 1); // 0..6 (日..土)
+  for(let i=0;i<firstWeekday;i++){ const empty = document.createElement('div'); empty.className = 'calendar-cell empty'; calendarGrid.appendChild(empty); }
+
+  for(let d=1; d<=days; d++){
+    const wk = weekdayOf(sheet.year, sheet.month, d);
+    const cell = document.createElement('div'); cell.className = 'calendar-cell';
+    if(wk===0 || wk===6) cell.classList.add('weekend');
+    if(sheet.year === (new Date()).getFullYear() && sheet.month === (new Date()).getMonth()+1 && d === (new Date()).getDate()) cell.classList.add('today');
+    const lbl = document.createElement('div'); lbl.className = 'date-label'; lbl.textContent = `${d}日 (${weekNames[wk]})`;
+    cell.appendChild(lbl);
+    const dayObj = member.days[d-1];
+    const summary = document.createElement('div'); summary.className = 'work-summary';
+    // 休みに変更されている場合は緑で強調
+    if(dayObj && dayObj.type === '休'){
+      cell.classList.add('rest');
+      summary.textContent = '休';
+    } else if(!dayObj || dayObj.type === '休'){
+      summary.textContent = '休';
+    } else {
+      const mins = computeMinutesFromDay(dayObj);
+      summary.textContent = mins ? formatMinutesToHM(Math.round(mins)) : '';
+      // checkin/checkout の簡易表示（複数コンポーネントはペアで表示）
+      const vals = Array.isArray(dayObj.values) ? dayObj.values : [];
+      if(vals && vals.length){
+        const ranges = [];
+        for(let ci=0; ci+1<vals.length; ci+=2){ const a = vals[ci], b = vals[ci+1]; if(a && b) ranges.push(`${a}-${b}`); }
+        if(ranges.length === 0 && vals[0] && vals[1]) ranges.push(`${vals[0]}-${vals[1]}`);
+        if(ranges.length) {
+          const tr = document.createElement('div'); tr.className = 'time-range'; tr.textContent = '出退: ' + ranges.join(' / ');
+          cell.appendChild(tr);
+        }
+      }
+    }
+    cell.appendChild(summary);
+    const note = document.createElement('div'); note.className = 'note';
+    const noteInput = document.createElement('input'); noteInput.type='text'; noteInput.style.width='100%'; noteInput.style.border='none'; noteInput.style.background='transparent'; noteInput.value = (dayObj && dayObj.note) ? dayObj.note : '';
+    note.appendChild(noteInput);
+    cell.appendChild(note);
+    // store note element for later retrieval
+    cell._noteInput = noteInput;
+    cell._dayIndex = d-1;
+    // 備考を自動保存（入力が止まってから保存）
+    noteInput.addEventListener('input', debounce(function(){
+      const val = String(this.value||'').trim();
+      const st = readStore(); if(st.current<0) return; const s = st.sheets[st.current]; const m = s.members[memberIndex]; if(!m) return; const di = d-1;
+      if(!m.days[di]) m.days[di] = { type: '休', values: null };
+      if(val) m.days[di].note = val; else delete m.days[di].note;
+      writeStore(st); renderAll();
+    }, 400));
+    if(dayObj && dayObj.note){ cell.title = String(dayObj.note); }
+    calendarGrid.appendChild(cell);
+  }
+
+  // 最後の週を 7 列にするためのダミーセル
+  const totalCells = firstWeekday + days;
+  const trailing = (7 - (totalCells % 7)) % 7;
+  for(let j=0;j<trailing;j++){ const empty = document.createElement('div'); empty.className = 'calendar-cell empty'; calendarGrid.appendChild(empty); }
+}
+
+if(calendarSaveBtn){ calendarSaveBtn.addEventListener('click', ()=>{
+  if(!_calendarEditing) return; const store = readStore(); const sheet = store.sheets[store.current]; const mi = _calendarEditing.memberIndex; const member = sheet.members[mi];
+  // 各セルから備考を拾って保存
+  Array.from(calendarGrid.children).forEach(cell=>{
+    const di = cell._dayIndex; const val = cell._noteInput.value && String(cell._noteInput.value).trim(); if(!member.days[di]) member.days[di] = { type: '休', values: null };
+    if(val){ if(!member.days[di].note || member.days[di].note !== val) member.days[di].note = val; }
+    else { if(member.days[di].note) delete member.days[di].note; }
+  });
+  writeStore(store); renderAll(); closeCalendarModal();
+}); }
+if(calendarCloseBtn){ calendarCloseBtn.addEventListener('click', ()=>{ closeCalendarModal(); }); }
 
 function init(){
   document.getElementById('newBtn').addEventListener('click', openNewModal);

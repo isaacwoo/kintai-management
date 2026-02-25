@@ -56,6 +56,20 @@
     </div>
   </div>
 
+  <!-- カレンダーモーダル：各メンバーの当月カレンダーを表示し、日ごとの備考を編集できます -->
+  <div id="calendarModal" class="modal" aria-hidden="true" style="display:none;">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-label="カレンダー">
+      <h2 id="calendarModalTitle">カレンダー</h2>
+      <div id="calendarGrid" class="calendar-grid" style="min-width:420px;min-height:240px;">
+        <!-- カレンダーのセルは app.js が描画します -->
+      </div>
+      <div class="form-actions">
+        <button id="calendarSaveBtn" class="btn">保存</button>
+        <button id="calendarCloseBtn" class="btn btn-secondary">閉じる</button>
+      </div>
+    </div>
+  </div>
+
   <!-- エクスポート/インポート用の範囲モーダル -->
   <div id="rangeModal" class="modal" aria-hidden="true" style="display:none;">
     <div class="modal-content" role="dialog" aria-modal="true" aria-label="データ範囲">
@@ -111,6 +125,17 @@
     <div style="margin-top:8px;"><a href="doc_viewer.html" style="color:#246;">ドキュメント（README）を表示する</a></div>
   </footer>
 
+  <!-- 単日用の備考ポップオーバー -->
+  <div id="notePopover" class="note-popover" style="display:none;">
+    <div class="note-popover-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <strong id="notePopoverTitle">備考編集</strong>
+        <button id="notePopoverClose" class="btn btn-secondary" style="padding:4px 8px;font-size:0.85rem;">閉じる</button>
+      </div>
+      <textarea id="notePopoverTextarea" rows="4" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ddd;border-radius:6px;"></textarea>
+      <div style="text-align:right;margin-top:8px;"><button id="notePopoverSave" class="btn" style="padding:6px 10px;">保存</button></div>
+    </div>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>
